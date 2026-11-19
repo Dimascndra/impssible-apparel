@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard Desain — IMPOSSIBLE APPAREL</title>
+  <link rel="stylesheet" href="/assets/app.css?v=20260902-4">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><img src="/assets/impossible-logo.png?v=20260902-4" alt="IMPOSSIBLE APPAREL"><div class="mode"><strong>DESAIN</strong><span>Public workspace · login aktif</span></div></div>
+      <div class="top-actions"><span class="muted" id="accountName"></span><button class="btn btn-small" id="logoutBtn">Keluar</button></div>
+    </header>
+    <main class="content">
+      <div class="headline"><div><h1>Design Queue</h1><p>Instruksi baru masuk otomatis. Perbarui status dan unggah hasil kerja.</p></div><button class="btn" id="refreshBtn">Sinkronkan</button></div>
+      <div class="status-board" id="statusBoard"></div>
+    </main>
+  </div>
+  <div class="modal" id="detailModal" hidden><section class="modal-card" id="detailCard"></section></div>
+  <script src="/assets/common.js?v=20260902-4"></script>
+  <script src="/assets/design.js?v=20260902-4"></script>
+</body>
+</html>

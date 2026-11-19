@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login Dashboard — IMPOSSIBLE APPAREL</title>
+  <link rel="stylesheet" href="/assets/app.css?v=20260902-4">
+</head>
+<body>
+  <main class="login-page">
+    <section class="login-art">
+      <img src="/assets/impossible-logo.png?v=20260902-4" alt="IMPOSSIBLE APPAREL">
+      <div class="login-copy">
+        <h1>Work<br>Portal</h1>
+        <p>Portal aman untuk Dashboard Desain dan Dashboard Instruksi IMPOSSIBLE APPAREL.</p>
+      </div>
+    </section>
+    <section class="login-side">
+      <form class="login-box" id="loginForm">
+        <h2>Masuk</h2>
+        <p>Gunakan akun Desain atau akun Admin sesuai akses Anda.</p>
+        <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" required autofocus></div>
+        <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+        <button class="btn btn-primary btn-wide" id="submitBtn">Masuk ke Dashboard</button>
+        <div class="error" id="error" aria-live="polite"></div>
+      </form>
+    </section>
+  </main>
+  <script src="/assets/common.js?v=20260902-4"></script>
+  <script src="/assets/login.js?v=20260902-4"></script>
+</body>
+</html>

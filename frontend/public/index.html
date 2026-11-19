@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#090909">
+  <meta name="description" content="Katalog, tracking produksi, dan invoice customer IMPOSSIBLE APPAREL.">
+  <title>IMPOSSIBLE APPAREL</title>
+  <link rel="stylesheet" href="/assets/public-site.css?v=20260909-11">
+  <link rel="stylesheet" href="/assets/location-v13.css?v=20260915-13">
+</head>
+<body>
+  <div class="welcome-splash" id="welcomeSplash" aria-label="Selamat datang di IMPOSSIBLE APPAREL">
+    <div class="welcome-grid" aria-hidden="true"></div>
+    <div class="welcome-stage">
+      <span class="welcome-kicker">WELCOME TO</span>
+      <div class="welcome-logo-frame">
+        <span class="welcome-orbit one" aria-hidden="true"></span>
+        <span class="welcome-orbit two" aria-hidden="true"></span>
+        <img id="welcomeLogo" src="/assets/impossible-logo.png?v=20260909-11" alt="IMPOSSIBLE APPAREL">
+      </div>
+      <div class="welcome-progress" aria-hidden="true"><i></i></div>
+      <span class="welcome-caption">CUSTOM APPAREL EXPERIENCE</span>
+    </div>
+    <button class="welcome-skip" id="welcomeSkip" type="button">Lewati</button>
+  </div>
+
+  <header class="public-header">
+    <a class="public-brand" href="#home" aria-label="IMPOSSIBLE APPAREL"><img id="siteLogo" src="/assets/impossible-logo.png?v=20260909-11" alt="IMPOSSIBLE APPAREL"></a>
+    <nav aria-label="Navigasi website">
+      <a href="#home">Home</a>
+      <a href="#catalog">Katalog</a>
+      <a href="#order">Tracking & Invoice</a>
+      <a href="#tentang">Tentang Kami</a>
+      <a href="#lokasi">Lokasi</a>
+    </nav>
+    <a class="header-contact" id="headerWhatsapp" href="#catalog" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.1 1.6 5.9L.2 24l6.5-1.7c1.7.9 3.6 1.4 5.5 1.4 6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.1-3.5-8.4Zm-8.3 18.2c-1.7 0-3.4-.5-4.9-1.3l-.4-.2-3.8 1 1-3.7-.2-.4a9.8 9.8 0 1 1 8.3 4.6Zm5.4-7.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-1.8-.9-3-1.6-4.2-3.7-.3-.5.3-.5.9-1.7.1-.2.1-.4 0-.6l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.5 3.8 6 5.3 2.2.9 3.1 1 4.2.8.7-.1 1.7-.7 1.9-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.7-.3Z"/></svg><span>WhatsApp</span></a>
+  </header>
+
+  <main>
+    <section class="public-hero" id="home">
+      <div class="hero-media-stage" id="heroMediaStage" aria-hidden="true"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span>IMPOSSIBLE APPAREL · CUSTOM PRODUCTION</span>
+        <h1 id="heroTitle">CUSTOM APPAREL, BUILT FOR YOUR IDENTITY.</h1>
+        <p id="heroText">Jersey, apparel, dan kebutuhan custom yang diproduksi dengan detail dari desain hingga selesai.</p>
+        <div class="hero-actions"><a class="public-btn primary" href="#catalog">Lihat Katalog</a><a class="public-btn ghost" href="#order">Cek Pesanan</a></div>
+      </div>
+      <aside class="hero-status"><strong>TRANSPARENT WORKFLOW</strong><div><span>01</span> Desain</div><div><span>02</span> Produksi</div><div><span>03</span> Quality Control</div><div><span>04</span> Selesai</div></aside>
+      <div class="hero-slider-controls" id="heroSliderControls" hidden><button id="heroPrevious" aria-label="Media sebelumnya">←</button><div id="heroDots"></div><button id="heroNext" aria-label="Media berikutnya">→</button></div>
+    </section>
+
+    <section class="catalog-section" id="catalog">
+      <div class="public-section-head"><div><span>KATALOG PRODUK</span><h2 id="catalogTitle">Katalog Impossible</h2></div><p>Pilih kategori dan lihat spesifikasi produk yang dapat dibuat sesuai kebutuhan.</p></div>
+      <div class="catalog-toolbar"><div class="category-tabs" id="categoryTabs"></div><label class="catalog-search"><span>Cari</span><input id="catalogSearch" type="search" placeholder="Nama produk, bahan, atau kategori…"></label></div>
+      <div class="catalog-grid" id="catalogGrid"><div class="public-empty"><strong>Memuat katalog…</strong></div></div>
+    </section>
+
+    <section class="order-section" id="order">
+      <div class="order-intro"><span>PORTAL CUSTOMER</span><h2>Cek tracking dan invoice.</h2><p>Masukkan nomor SPK serta kode akses yang diberikan Admin. Data yang terlihat hanya milik pesanan tersebut.</p><div class="privacy-note"><strong>Akses aman per pesanan</strong><small>Kode akses berbeda untuk setiap SPK dan bisa diperbarui oleh Admin.</small></div></div>
+      <div class="customer-access">
+        <form id="customerLoginForm" class="customer-login-card">
+          <div><span>AKSES PESANAN</span><h3>Masuk ke pesanan Anda</h3></div>
+          <label>Nomor SPK<input name="spk" autocomplete="username" placeholder="Contoh: SPK-20260907-001" required></label>
+          <label>Kode Akses<input name="code" autocomplete="current-password" placeholder="8 digit kode customer" required></label>
+          <button class="public-btn primary wide" id="customerLoginButton" type="submit">Buka Pesanan</button>
+          <p class="form-message" id="customerLoginMessage"></p>
+        </form>
+        <section class="customer-portal" id="customerPortal" hidden></section>
+      </div>
+    </section>
+    <section class="about-section" id="tentang" aria-labelledby="aboutTitle">
+      <div class="about-motion-window" aria-hidden="true">
+        <div class="about-motion-photo" id="aboutMotionPhoto"></div>
+        <div class="about-motion-shade"></div>
+      </div>
+      <div class="about-copy">
+        <span id="aboutKicker">TENTANG KAMI</span>
+        <h2 id="aboutTitle">DIBUAT UNTUK IDENTITAS ANDA.</h2>
+        <p id="aboutText">IMPOSSIBLE APPAREL membantu mewujudkan jersey dan apparel custom dari tahap desain, pemilihan bahan, produksi, hingga quality control.</p>
+        <div class="about-values"><div><strong>01</strong><span>Desain terarah</span></div><div><strong>02</strong><span>Produksi terpantau</span></div><div><strong>03</strong><span>Hasil berkualitas</span></div></div>
+      </div>
+    </section>
+    <section class="location-section" id="lokasi" aria-labelledby="locationTitle">
+      <div class="public-section-head"><div><span>KUNJUNGI KAMI</span><h2 id="locationTitle">Lokasi Impossible Apparel</h2></div><p>Temukan lokasi kami dan buka petunjuk arah untuk berkunjung.</p></div>
+      <iframe class="location-map" title="Peta lokasi Impossible Apparel" src="https://maps.google.com/maps?q=-6.6518483,108.2188568&amp;z=17&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+      <div class="location-actions">
+        <a class="public-btn primary" href="https://www.google.com/maps/dir/?api=1&amp;destination=-6.6518483%2C108.2188568" target="_blank" rel="noopener noreferrer">Petunjuk Arah</a>
+        <a class="public-btn" href="https://www.google.com/maps/search/?api=1&amp;query=-6.6518483%2C108.2188568" target="_blank" rel="noopener noreferrer">Buka Google Maps</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="public-footer"><img src="/assets/impossible-logo.png?v=20260909-11" alt="IMPOSSIBLE APPAREL"><div><strong id="footerBrand">IMPOSSIBLE APPAREL</strong><p id="footerAddress">Custom apparel production.</p></div><a id="footerInstagram" href="#" hidden>Instagram</a></footer>
+
+  <section class="public-live-ticker" id="liveOrderTicker" aria-label="Aktivitas order terbaru" aria-live="off" hidden>
+    <div class="ticker-label"><i></i><span id="tickerLabel">LIVE ORDER</span></div>
+    <div class="ticker-window" id="tickerWindow"><div class="ticker-track" id="tickerTrack"></div></div>
+  </section>
+
+  <div class="product-modal" id="productModal" hidden><article class="product-dialog" id="productDialog"></article></div>
+  <div class="public-toast" id="publicToast" hidden></div>
+  <script src="/assets/public-site.js?v=20260909-11"></script>
+</body>
+</html>

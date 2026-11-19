@@ -1,0 +1,6 @@
+/target
+/backend/target
+*.log
+.env
+backend/.env
+data/session-secret.txt
