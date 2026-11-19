@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for impossible-apparel Rust Axum Backend
-FROM rust:1.80-alpine AS builder
+FROM rust:alpine AS builder
 
 RUN apk add --no-cache musl-dev build-base openssl-dev
 

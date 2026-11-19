@@ -121,6 +121,10 @@ fn redirect_302(to: &str) -> Response {
     (StatusCode::FOUND, [(header::LOCATION, to)]).into_response()
 }
 
+fn redirect_301(to: &str) -> Response {
+    (StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, to)]).into_response()
+}
+
 // UI Handlers
 async fn public_home_handler(
     State(s): State<AppState>,
@@ -147,10 +151,6 @@ async fn public_home_handler(
         }
     }
     Html(s.ui.public_site.clone()).into_response()
-}
-
-async fn public_site_handler(State(s): State<AppState>) -> impl IntoResponse {
-    Html(s.ui.public_site.clone())
 }
 
 async fn login_page_handler(State(s): State<AppState>, jar: CookieJar) -> Response {
@@ -253,12 +253,12 @@ fn build_unified_router(state: AppState) -> Router {
     // 1. Unprotected / Public UI routes
     let public_ui_routes = Router::new()
         .route("/", get(public_home_handler))
-        .route("/katalog", get(public_site_handler))
-        .route("/katalog/", get(public_site_handler))
-        .route("/cek-pesanan", get(public_site_handler))
-        .route("/cek-pesanan/", get(public_site_handler))
-        .route("/website", get(public_site_handler))
-        .route("/website/", get(public_site_handler))
+        .route("/katalog", get(|| async { redirect_301("/") }))
+        .route("/katalog/", get(|| async { redirect_301("/") }))
+        .route("/cek-pesanan", get(|| async { redirect_301("/#order") }))
+        .route("/cek-pesanan/", get(|| async { redirect_301("/#order") }))
+        .route("/website", get(|| async { redirect_301("/") }))
+        .route("/website/", get(|| async { redirect_301("/") }))
         .route("/login", get(login_page_handler))
         .route("/login/", get(login_page_handler));
 

@@ -21,15 +21,15 @@ info() { echo -e "${BLUE}==>${NC} ${YELLOW}$1${NC}"; }
 info "1. PENGUJIAN HALAMAN PUBLIK & PUBLIC API (TANPA LOGIN)"
 # GET / -> 200 OK
 CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/")
-[ "$CODE" = "200" ] && pass "GET / mengembalikan 200 OK (Public Landing)" || fail "GET / mengembalikan $CODE"
+[ "$CODE" = "200" ] && pass "GET / mengembalikan 200 OK (Halaman Utama Publik)" || fail "GET / mengembalikan $CODE"
 
-# GET /katalog -> 200 OK
+# GET /katalog -> 301 Redirect ke /
 CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/katalog")
-[ "$CODE" = "200" ] && pass "GET /katalog mengembalikan 200 OK" || fail "GET /katalog mengembalikan $CODE"
+[ "$CODE" = "301" ] && pass "GET /katalog mengembalikan 301 Redirect ke / (tanpa /katalog)" || fail "GET /katalog mengembalikan $CODE"
 
-# GET /cek-pesanan -> 200 OK
+# GET /cek-pesanan -> 301 Redirect ke /#order
 CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/cek-pesanan")
-[ "$CODE" = "200" ] && pass "GET /cek-pesanan mengembalikan 200 OK" || fail "GET /cek-pesanan mengembalikan $CODE"
+[ "$CODE" = "301" ] && pass "GET /cek-pesanan mengembalikan 301 Redirect ke /#order" || fail "GET /cek-pesanan mengembalikan $CODE"
 
 # GET /login -> 200 OK
 CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/login")
