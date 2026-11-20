@@ -160,6 +160,15 @@ export interface CashflowTransaction {
   reference_no?: string;
 }
 
+export interface CatalogMediaItem {
+  id: number;
+  filename: string;
+  mime: string;
+  media_type: 'image' | 'video';
+  size: number;
+  url: string;
+}
+
 export interface CatalogProductMedia {
   id: number;
   url: string;
@@ -170,12 +179,26 @@ export interface CatalogProduct {
   id: number;
   name: string;
   slug: string;
+  order_type_id?: number | null;
   category: string;
+  category_name?: string;
   price: number;
-  description: string;
-  materials: string[];
-  is_published: boolean;
-  media: CatalogProductMedia[];
+  short_description?: string;
+  description?: string;
+  status: string;
+  badge?: string;
+  collection?: string;
+  display_order?: number;
+  featured?: boolean;
+  min_order?: number;
+  production_days?: number;
+  sizes?: string[];
+  materials?: Array<{ id: number; name: string; unit?: string; note?: string }>;
+  specifications?: string;
+  cover?: CatalogMediaItem | null;
+  gallery?: CatalogMediaItem[];
+  media?: CatalogProductMedia[];
+  is_published?: boolean;
   sort_order?: number;
 }
 
@@ -186,17 +209,24 @@ export interface WebsiteSettings {
   catalog_title?: string;
   whatsapp?: string;
   address?: string;
+  instagram?: string;
   primary_color?: string;
   background_color?: string;
   show_about?: boolean;
   about_kicker?: string;
   about_title?: string;
   about_text?: string;
-  nav_background?: { id?: number; url: string };
-  background?: { id?: number; url: string };
-  about_photo?: { id?: number; url: string };
+  about_background?: CatalogMediaItem | null;
+  nav_background?: CatalogMediaItem | null;
+  background?: CatalogMediaItem | null;
+  logo?: CatalogMediaItem | null;
+  hero_media?: CatalogMediaItem[];
+  hero_interval_seconds?: number;
+  show_order_ticker?: boolean;
+  ticker_label?: string;
+  show_prices?: boolean;
   header_media?: Array<{ id: number; url: string; kind?: string }>;
-  logo?: { id?: number; url: string };
+  about_photo?: { id?: number; url: string };
 }
 
 export interface MarketingSummary {

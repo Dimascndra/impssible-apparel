@@ -1,54 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { apiClient, formatRupiah, formatDate, ApiError } from '../api/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { apiClient, formatRupiah, formatDate } from '../api/client';
 import { CatalogProduct, WebsiteSettings } from '../types';
-import {
-  Search,
-  MessageCircle,
-  Download,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  MapPin,
-  ExternalLink,
-  ChevronRight,
-  ShieldCheck,
-  X,
-  Sparkles,
-  Layers,
-  Scissors,
-  CheckCheck
-} from 'lucide-react';
 
 interface CustomerSummary {
-  spk: string;
-  customer: string;
-  product: string;
-  qty: number;
-  stage: string;
-  progress: number;
+  job: {
+    spk: string;
+    customer: string;
+    product: string;
+    qty: number;
+    deadline?: string;
+    production: {
+      stage: string;
+    };
+  };
+  stages: string[];
   history: Array<{
     stage: string;
-    progress: number;
     note?: string;
     created_at: string;
   }>;
-  invoice?: {
+  invoices: Array<{
     id: number;
     invoice_no: string;
     total: number;
     paid: number;
     balance: number;
     payment_status: string;
-  };
+    items: Array<{
+      description: string;
+      qty: number;
+      price: number;
+    }>;
+    payments: Array<{
+      date: string;
+      method: string;
+      amount: number;
+    }>;
+  }>;
 }
 
 export const PublicLanding: React.FC = () => {
-  const [splashVisible, setSplashVisible] = useState(true);
+  const [splashLeaving, setSplashLeaving] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
+
   const [settings, setSettings] = useState<WebsiteSettings>({});
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('SEMUA');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
+  const [selectedProductImage, setSelectedProductImage] = useState<string>('');
+
+  // Hero Slider
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Customer Tracking State
   const [spkInput, setSpkInput] = useState('');
@@ -57,14 +61,25 @@ export const PublicLanding: React.FC = () => {
   const [customerError, setCustomerError] = useState<string | null>(null);
   const [customerData, setCustomerData] = useState<CustomerSummary | null>(null);
 
-  // Live order ticker
-  const [activities, setActivities] = useState<Array<{ id: number; message: string; time: string }>>([]);
+  // Live order activities
+  const [activities, setActivities] = useState<Array<{ id: number; message: string; created_at?: string }>>([]);
 
-  // Auto close splash after 2.4 seconds
+  // Toast
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
+  };
+
+  // Welcome splash dismiss
+  const dismissSplash = () => {
+    if (splashLeaving) return;
+    setSplashLeaving(true);
+    setTimeout(() => setSplashHidden(true), 720);
+  };
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setSplashVisible(false);
-    }, 2400);
+    const timer = setTimeout(dismissSplash, 2650);
     return () => clearTimeout(timer);
   }, []);
 
@@ -76,42 +91,73 @@ export const PublicLanding: React.FC = () => {
           '/api/public/catalog'
         );
         if (catRes.products) setProducts(catRes.products);
-        if (catRes.settings) setSettings(catRes.settings);
+        if (catRes.settings) {
+          setSettings(catRes.settings);
+          if (catRes.settings.primary_color) {
+            document.documentElement.style.setProperty('--public-primary', catRes.settings.primary_color);
+          }
+          if (catRes.settings.background_color) {
+            document.documentElement.style.setProperty('--public-dark', catRes.settings.background_color);
+          }
+        }
       } catch (err) {
         console.error('Failed to load catalog:', err);
       }
 
       try {
-        const actRes = await apiClient<{ activities: Array<{ id: number; message: string; time: string }> }>(
+        const actRes = await apiClient<{ activities?: Array<{ id: number; message: string; created_at?: string }>; events?: Array<{ id: number; message: string; created_at?: string }> }>(
           '/api/public/activity'
         );
-        if (actRes.activities) setActivities(actRes.activities);
+        const list = actRes.activities || actRes.events || [];
+        if (list.length) setActivities(list);
       } catch {
-        // Activity ticker optional
+        // Optional ticker
+      }
+
+      // Check existing customer session
+      try {
+        const custRes = await apiClient<CustomerSummary>('/api/public/customer/summary');
+        if (custRes?.job) setCustomerData(custRes);
+      } catch {
+        // Not logged in as customer
       }
     }
     loadData();
   }, []);
 
-  // Categories list
+  // Hero Slider Autoplay
+  const heroMedia = Array.isArray(settings.hero_media) ? settings.hero_media : [];
+  useEffect(() => {
+    if (heroMedia.length <= 1) return;
+    const intervalSec = Math.max(3, Number(settings.hero_interval_seconds) || 6);
+    heroTimerRef.current = setTimeout(() => {
+      setHeroIndex((prev) => (prev + 1) % heroMedia.length);
+    }, intervalSec * 1000);
+
+    return () => {
+      if (heroTimerRef.current) clearTimeout(heroTimerRef.current);
+    };
+  }, [heroIndex, heroMedia, settings.hero_interval_seconds]);
+
   const categories = ['SEMUA', ...Array.from(new Set(products.map((p) => p.category).filter(Boolean)))];
 
   const filteredProducts = products.filter((p) => {
     const matchCat = selectedCategory === 'SEMUA' || p.category === selectedCategory;
+    const q = searchQuery.toLowerCase();
     const matchSearch =
-      !searchQuery ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      (p.short_description || '').toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q);
     return matchCat && matchSearch;
   });
 
   const getWhatsappUrl = (text?: string) => {
-    const phone = (settings.whatsapp || '6281222333444').replace(/\D/g, '').replace(/^0/, '62');
-    const msg = text || 'Halo IMPOSSIBLE APPAREL, saya ingin konsultasi order custom jersey/apparel.';
+    const phone = (settings.whatsapp || '083189095042').replace(/\D/g, '').replace(/^0/, '62');
+    const msg = text || 'Halo IMPOSSIBLE APPAREL, saya ingin konsultasi produk custom.';
     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
   };
 
-  // Customer Login Handler
   const handleCustomerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setCustomerLoading(true);
@@ -122,9 +168,9 @@ export const PublicLanding: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({ spk: spkInput.trim(), code: codeInput.trim() }),
       });
-
       const summary = await apiClient<CustomerSummary>('/api/public/customer/summary');
       setCustomerData(summary);
+      showToast('Akses pesanan terbuka.');
     } catch (err: any) {
       setCustomerError(err.message || 'Nomor SPK atau Kode Akses tidak valid.');
     } finally {
@@ -134,658 +180,751 @@ export const PublicLanding: React.FC = () => {
 
   const handleCustomerLogout = async () => {
     try {
-      await apiClient('/api/public/customer/logout', { method: 'POST' });
+      await apiClient('/api/public/customer/logout', { method: 'POST', body: '{}' });
     } catch {
-      // Ignore error on logout
+      // ignore
     }
     setCustomerData(null);
     setSpkInput('');
     setCodeInput('');
+    showToast('Berhasil keluar dari portal customer.');
   };
 
-  const handleDownloadInvoicePdf = async (invoiceId: number) => {
+  const downloadCustomerPdf = async (id: number) => {
     try {
-      const response = await fetch(`/api/public/customer/invoices/${invoiceId}/pdf`, {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Gagal mengunduh PDF');
+      const response = await fetch(`/api/public/customer/invoices/${id}/pdf`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'PDF gagal dibuat.');
+      }
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `INVOICE-${customerData?.spk || 'OFFICIAL'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `INVOICE-${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
     } catch (err: any) {
-      alert('Gagal mengunduh dokumen: ' + err.message);
+      showToast(err.message || 'Gagal mengunduh invoice.');
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#090909] text-white selection:bg-[#ff1b1b] selection:text-white">
-      {/* 1. Welcome Splash */}
-      {splashVisible && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#090909] transition-opacity duration-700">
-          <div className="relative flex flex-col items-center">
-            {/* Pulsing ring animation */}
-            <div className="w-48 h-48 rounded-full border border-[#ff1b1b]/30 animate-ping absolute -top-8" />
-            <div className="w-56 h-56 rounded-full border border-[#d4af37]/20 animate-pulse absolute -top-12" />
+  const openProductModal = (p: CatalogProduct) => {
+    setSelectedProduct(p);
+    setSelectedProductImage(p.cover?.url || p.gallery?.[0]?.url || '');
+    document.body.classList.add('modal-open');
+  };
 
-            <span className="text-[#ff1b1b] text-xs font-black tracking-[0.3em] uppercase mb-4 animate-bounce">
-              WELCOME TO
-            </span>
-            <img
-              src="/assets/impossible-logo.png"
-              alt="IMPOSSIBLE APPAREL"
-              className="h-16 w-auto object-contain mb-8 relative z-10"
-            />
-            <div className="w-48 h-1 bg-[#222] rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-gradient-to-r from-[#ff1b1b] to-[#d4af37] animate-[pulse_1s_infinite] w-full" />
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+    document.body.classList.remove('modal-open');
+  };
+
+  const firstHeroImage = heroMedia.find((item) => item.media_type === 'image');
+  const aboutBackgroundUrl =
+    settings.about_background?.url || settings.background?.url || firstHeroImage?.url || '';
+
+  return (
+    <>
+      {/* 1. Welcome Splash */}
+      {!splashHidden && (
+        <div
+          className={`welcome-splash ${splashLeaving ? 'leaving' : ''}`}
+          id="welcomeSplash"
+          aria-label="Selamat datang di IMPOSSIBLE APPAREL"
+        >
+          <div className="welcome-grid" aria-hidden="true" />
+          <div className="welcome-stage">
+            <span className="welcome-kicker">WELCOME TO</span>
+            <div className="welcome-logo-frame">
+              <span className="welcome-orbit one" aria-hidden="true" />
+              <span className="welcome-orbit two" aria-hidden="true" />
+              <img
+                id="welcomeLogo"
+                src={settings.logo?.url || '/assets/impossible-logo.png'}
+                alt="IMPOSSIBLE APPAREL"
+              />
             </div>
-            <span className="text-neutral-400 text-[10px] tracking-[0.25em] uppercase font-semibold">
-              CUSTOM APPAREL EXPERIENCE
-            </span>
+            <div className="welcome-progress" aria-hidden="true">
+              <i />
+            </div>
+            <span className="welcome-caption">CUSTOM APPAREL EXPERIENCE</span>
           </div>
-          <button
-            onClick={() => setSplashVisible(false)}
-            className="absolute bottom-10 px-6 py-2 rounded-full border border-[#333] hover:border-[#666] text-xs tracking-wider uppercase text-neutral-400 hover:text-white transition"
-          >
-            Lewati →
+          <button className="welcome-skip" id="welcomeSkip" type="button" onClick={dismissSplash}>
+            Lewati
           </button>
         </div>
       )}
 
-      {/* 2. Top Header Navigation */}
-      <header className="sticky top-0 z-40 bg-[#080808]/90 backdrop-blur-md border-b border-[#222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <a href="#home" className="flex items-center gap-3">
-            <img
-              src="/assets/impossible-logo.png"
-              alt="IMPOSSIBLE APPAREL"
-              className="h-10 w-auto object-contain"
-            />
-          </a>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold tracking-wide">
-            <a href="#home" className="text-neutral-300 hover:text-white transition">Home</a>
-            <a href="#catalog" className="text-neutral-300 hover:text-white transition">Katalog</a>
-            <a href="#order" className="text-neutral-300 hover:text-white transition">Tracking & Invoice</a>
-            <a href="#tentang" className="text-neutral-300 hover:text-white transition">Tentang Kami</a>
-            <a href="#lokasi" className="text-neutral-300 hover:text-white transition">Lokasi</a>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <a
-              href="/login"
-              className="text-xs uppercase font-bold tracking-wider text-neutral-400 hover:text-white px-3 py-2 rounded-lg border border-[#333] hover:border-neutral-500 transition"
-            >
-              Login Staff
-            </a>
-            <a
-              href={getWhatsappUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-[#ff1b1b] hover:bg-[#e01616] text-white text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl transition shadow-lg shadow-[#ff1b1b]/20"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>WhatsApp</span>
-            </a>
-          </div>
-        </div>
+      {/* 2. Public Header */}
+      <header
+        className="public-header"
+        style={
+          settings.nav_background?.url
+            ? ({ '--public-header-image': `url("${settings.nav_background.url}")` } as React.CSSProperties)
+            : undefined
+        }
+      >
+        <a className="public-brand" href="#home" aria-label="IMPOSSIBLE APPAREL">
+          <img
+            id="siteLogo"
+            src={settings.logo?.url || '/assets/impossible-logo.png'}
+            alt="IMPOSSIBLE APPAREL"
+          />
+        </a>
+        <nav aria-label="Navigasi website">
+          <a href="#home">Home</a>
+          <a href="#catalog">Katalog</a>
+          <a href="#order">Tracking &amp; Invoice</a>
+          <a href="#tentang">Tentang Kami</a>
+          <a href="#lokasi">Lokasi</a>
+        </nav>
+        <a
+          className="header-contact"
+          id="headerWhatsapp"
+          href={getWhatsappUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.6 4.1 1.6 5.9L.2 24l6.5-1.7c1.7.9 3.6 1.4 5.5 1.4 6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.1-3.5-8.4Zm-8.3 18.2c-1.7 0-3.4-.5-4.9-1.3l-.4-.2-3.8 1 1-3.7-.2-.4a9.8 9.8 0 1 1 8.3 4.6Zm5.4-7.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-1.8-.9-3-1.6-4.2-3.7-.3-.5.3-.5.9-1.7.1-.2.1-.4 0-.6l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.6c.2.2 2.5 3.8 6 5.3 2.2.9 3.1 1 4.2.8.7-.1 1.7-.7 1.9-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.7-.3Z" />
+          </svg>
+          <span>WhatsApp</span>
+        </a>
       </header>
 
-      {/* 3. Hero Section */}
-      <section id="home" className="relative min-h-[85vh] flex items-center justify-center overflow-hidden border-b border-[#222]">
-        {/* Glow & Backdrop */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#111] via-[#090909] to-[#090909] z-0" />
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[#ff1b1b]/10 blur-[140px] pointer-events-none rounded-full" />
-
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-20 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#18181b] border border-[#333] text-[11px] font-bold tracking-[0.2em] text-[#ff1b1b] uppercase mb-8 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-[#ff1b1b]" />
-            <span>{settings.hero_title ? 'IMPOSSIBLE APPAREL · CUSTOM PRODUCTION' : 'IMPOSSIBLE APPAREL · CUSTOM PRODUCTION'}</span>
+      {/* 3. Main Content */}
+      <main>
+        {/* Hero Section */}
+        <section
+          className="public-hero"
+          id="home"
+          style={
+            settings.background?.url ? { backgroundImage: `url("${settings.background.url}")` } : undefined
+          }
+        >
+          <div className="hero-media-stage" id="heroMediaStage">
+            {heroMedia.map((item, idx) => (
+              <div
+                key={item.id || idx}
+                className={`hero-media-slide ${idx === heroIndex ? 'active' : ''}`}
+                data-hero-slide={idx}
+              >
+                {item.media_type === 'video' ? (
+                  <video src={item.url} muted playsInline autoPlay={idx === heroIndex} loop />
+                ) : (
+                  <img src={item.url} alt="" fetchPriority={idx === 0 ? 'high' : 'auto'} />
+                )}
+              </div>
+            ))}
           </div>
-
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight leading-[1.05] mb-8">
-            CUSTOM APPAREL,<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-neutral-200 to-[#d4af37]">
-              BUILT FOR YOUR IDENTITY.
-            </span>
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-neutral-400 text-base sm:text-lg mb-10 leading-relaxed">
-            Jersey full print, polo custom, hoodie, dan apparel komunitas yang diproduksi dengan standar presisi tinggi dari tahap desain hingga selesai.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a
-              href="#catalog"
-              className="w-full sm:w-auto px-8 py-4 bg-[#ff1b1b] hover:bg-[#e01616] text-white font-black text-sm uppercase tracking-wider rounded-xl transition shadow-xl shadow-[#ff1b1b]/20 flex items-center justify-center gap-2"
-            >
-              <span>Lihat Katalog Produk</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
-            <a
-              href="#order"
-              className="w-full sm:w-auto px-8 py-4 bg-[#18181b] hover:bg-[#222] border border-[#333] hover:border-neutral-500 text-white font-bold text-sm uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2"
-            >
-              <span>Cek Status Pesanan</span>
-            </a>
-          </div>
-
-          {/* 4-Step Transparent Workflow */}
-          <div className="mt-16 pt-10 border-t border-[#222] grid grid-cols-2 md:grid-cols-4 gap-6 text-left">
-            <div className="p-4 rounded-xl bg-[#121214]/60 border border-[#222]">
-              <div className="text-[#ff1b1b] font-black text-xs mb-1">01 / BRIEF</div>
-              <div className="text-sm font-bold text-white">Desain Eksklusif</div>
-              <div className="text-xs text-neutral-500 mt-1">Mockup 3D & file CDR presisi</div>
-            </div>
-            <div className="p-4 rounded-xl bg-[#121214]/60 border border-[#222]">
-              <div className="text-[#d4af37] font-black text-xs mb-1">02 / SUBLIM</div>
-              <div className="text-sm font-bold text-white">Cetak Pola & Press</div>
-              <div className="text-xs text-neutral-500 mt-1">Tinta original & warna pekat</div>
-            </div>
-            <div className="p-4 rounded-xl bg-[#121214]/60 border border-[#222]">
-              <div className="text-[#ff1b1b] font-black text-xs mb-1">03 / JAHIT</div>
-              <div className="text-sm font-bold text-white">Jahit & Bordir</div>
-              <div className="text-xs text-neutral-500 mt-1">Jahitan rapi standar distro</div>
-            </div>
-            <div className="p-4 rounded-xl bg-[#121214]/60 border border-[#222]">
-              <div className="text-[#13a45a] font-black text-xs mb-1">04 / FINISH</div>
-              <div className="text-sm font-bold text-white">QC & Pengiriman</div>
-              <div className="text-xs text-neutral-500 mt-1">100% lolos uji sebelum kirim</div>
+          <div className="hero-overlay" />
+          <div className="hero-content">
+            <span>IMPOSSIBLE APPAREL · CUSTOM PRODUCTION</span>
+            <h1 id="heroTitle">{settings.hero_title || 'CUSTOM APPAREL, BUILT FOR YOUR IDENTITY.'}</h1>
+            <p id="heroText">
+              {settings.hero_text ||
+                'Jersey, apparel, dan kebutuhan custom yang diproduksi dengan detail dari desain hingga selesai.'}
+            </p>
+            <div className="hero-actions">
+              <a className="public-btn primary" href="#catalog">
+                Lihat Katalog
+              </a>
+              <a className="public-btn ghost" href="#order">
+                Cek Pesanan
+              </a>
             </div>
           </div>
-        </div>
-      </section>
+          <aside className="hero-status">
+            <strong>TRANSPARENT WORKFLOW</strong>
+            <div>
+              <span>01</span> Desain
+            </div>
+            <div>
+              <span>02</span> Produksi
+            </div>
+            <div>
+              <span>03</span> Quality Control
+            </div>
+            <div>
+              <span>04</span> Selesai
+            </div>
+          </aside>
+          {heroMedia.length > 1 && (
+            <div className="hero-slider-controls" id="heroSliderControls">
+              <button
+                id="heroPrevious"
+                type="button"
+                aria-label="Media sebelumnya"
+                onClick={() => setHeroIndex((prev) => (prev - 1 + heroMedia.length) % heroMedia.length)}
+              >
+                ←
+              </button>
+              <div id="heroDots">
+                {heroMedia.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={idx === heroIndex ? 'active' : ''}
+                    onClick={() => setHeroIndex(idx)}
+                    aria-label={`Tampilkan media ${idx + 1}`}
+                  />
+                ))}
+              </div>
+              <button
+                id="heroNext"
+                type="button"
+                aria-label="Media berikutnya"
+                onClick={() => setHeroIndex((prev) => (prev + 1) % heroMedia.length)}
+              >
+                →
+              </button>
+            </div>
+          )}
+        </section>
 
-      {/* Live Order Ticker */}
-      {activities.length > 0 && (
-        <div className="bg-[#121214] border-b border-[#222] py-3 px-4 overflow-hidden">
-          <div className="max-w-7xl mx-auto flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ff1b1b]/10 text-[#ff1b1b] font-black tracking-widest uppercase text-[10px]">
-              <span className="w-2 h-2 rounded-full bg-[#ff1b1b] animate-ping" />
-              LIVE ORDER
-            </span>
-            <div className="flex gap-8 overflow-x-auto no-scrollbar whitespace-nowrap text-neutral-300">
-              {activities.map((act) => (
-                <span key={act.id} className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#13a45a]" />
-                  <span>{act.message}</span>
-                  <span className="text-neutral-500">({act.time})</span>
-                </span>
+        {/* Catalog Section */}
+        <section className="catalog-section" id="catalog">
+          <div className="public-section-head">
+            <div>
+              <span>KATALOG PRODUK</span>
+              <h2 id="catalogTitle">{settings.catalog_title || 'Katalog Impossible'}</h2>
+            </div>
+            <p>Pilih kategori dan lihat spesifikasi produk yang dapat dibuat sesuai kebutuhan.</p>
+          </div>
+          <div className="catalog-toolbar">
+            <div className="category-tabs" id="categoryTabs">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={cat === selectedCategory ? 'active' : ''}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat}
+                </button>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 4. Catalog Section */}
-      <section id="catalog" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 border-b border-[#222]">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div>
-            <span className="text-[#ff1b1b] text-xs font-black tracking-[0.25em] uppercase block mb-2">
-              KATALOG PRODUK
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-white">
-              {settings.catalog_title || 'Katalog Impossible'}
-            </h2>
-            <p className="text-neutral-400 text-sm mt-2 max-w-lg">
-              Pilih spesifikasi bahan dan model jersey custom sesuai preferensi tim Anda.
-            </p>
+            <label className="catalog-search">
+              <span>Cari</span>
+              <input
+                id="catalogSearch"
+                type="search"
+                placeholder="Nama produk, bahan, atau kategori…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </label>
           </div>
 
-          {/* Search bar */}
-          <div className="w-full md:w-80 relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
-            <input
-              type="text"
-              placeholder="Cari produk atau bahan..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-[#141416] border border-[#333] rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-[#ff1b1b]"
-            />
-          </div>
-        </div>
-
-        {/* Category Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition shrink-0 ${
-                selectedCategory === cat
-                  ? 'bg-[#ff1b1b] text-white shadow-lg shadow-[#ff1b1b]/20'
-                  : 'bg-[#141416] text-neutral-400 hover:text-white border border-[#2a2a2a]'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Product Cards Grid */}
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-20 bg-[#121214] rounded-2xl border border-[#222]">
-            <Layers className="w-10 h-10 text-neutral-600 mx-auto mb-3" />
-            <p className="text-neutral-400 font-semibold">Tidak ada produk yang cocok dengan pencarian.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((p) => {
-              const mainMedia = p.media?.find((m) => m.is_primary) || p.media?.[0];
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedProduct(p)}
-                  className="group bg-[#121214] border border-[#262626] hover:border-[#ff1b1b]/50 rounded-2xl overflow-hidden cursor-pointer transition duration-200 flex flex-col hover:-translate-y-1 shadow-lg"
-                >
-                  <div className="aspect-square bg-[#1a1a1c] relative overflow-hidden flex items-center justify-center">
-                    {mainMedia ? (
-                      <img
-                        src={mainMedia.url}
-                        alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                      />
-                    ) : (
-                      <Layers className="w-12 h-12 text-neutral-700" />
-                    )}
-                    <span className="absolute top-3 left-3 px-2.5 py-1 bg-black/75 backdrop-blur-md rounded-md text-[10px] font-black uppercase tracking-wider text-neutral-300 border border-white/10">
-                      {p.category}
-                    </span>
-                  </div>
-
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-bold text-white text-base group-hover:text-[#ff1b1b] transition line-clamp-1">
-                        {p.name}
-                      </h3>
-                      <p className="text-neutral-400 text-xs mt-1.5 line-clamp-2 leading-relaxed">
-                        {p.description || 'Pilihan bahan dryfit premium dengan sublimasi anti luntur.'}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-[#222] flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] text-neutral-500 uppercase font-semibold block">Mulai</span>
-                        <strong className="text-sm font-bold text-[#d4af37]">
-                          {formatRupiah(p.price)}
-                        </strong>
-                      </div>
-                      <span className="text-xs font-semibold text-neutral-400 group-hover:text-white flex items-center gap-1">
-                        Detail <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* 5. Product Detail Modal */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#121214] border border-[#333] rounded-2xl max-w-2xl w-full p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-5 right-5 text-neutral-400 hover:text-white p-2 rounded-lg bg-[#222]"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="aspect-square bg-[#1a1a1c] rounded-xl overflow-hidden flex items-center justify-center">
-                {selectedProduct.media?.[0] ? (
-                  <img
-                    src={selectedProduct.media[0].url}
-                    alt={selectedProduct.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Layers className="w-16 h-16 text-neutral-700" />
-                )}
-              </div>
-
-              <div className="flex flex-col justify-between">
-                <div>
-                  <span className="px-2.5 py-1 bg-[#ff1b1b]/10 text-[#ff1b1b] border border-[#ff1b1b]/20 rounded text-[10px] font-black uppercase tracking-wider inline-block mb-3">
-                    {selectedProduct.category}
-                  </span>
-                  <h2 className="text-2xl font-black uppercase text-white mb-2">{selectedProduct.name}</h2>
-                  <div className="text-xl font-bold text-[#d4af37] mb-4">
-                    {formatRupiah(selectedProduct.price)} <span className="text-xs text-neutral-400 font-normal">/ pcs</span>
-                  </div>
-                  <p className="text-sm text-neutral-300 leading-relaxed mb-4">
-                    {selectedProduct.description || 'Pilihan bahan premium dengan garansi warna sublimasi presisi.'}
-                  </p>
-
-                  {selectedProduct.materials && selectedProduct.materials.length > 0 && (
-                    <div className="mb-4">
-                      <span className="text-xs uppercase font-bold text-neutral-400 block mb-2">Pilihan Bahan:</span>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProduct.materials.map((m, idx) => (
-                          <span key={idx} className="px-2.5 py-1 rounded bg-[#222] text-xs text-neutral-300 font-medium">
-                            {m}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <a
-                  href={getWhatsappUrl(`Halo IMPOSSIBLE APPAREL, saya tertarik dengan produk ${selectedProduct.name}.`)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-6 w-full py-3.5 bg-[#ff1b1b] hover:bg-[#e01616] text-white font-bold text-sm uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-[#ff1b1b]/20"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Pesan Sekarang via WhatsApp</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. Order Tracking & Customer Portal Section */}
-      <section id="order" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 border-b border-[#222]">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          <div className="lg:col-span-5">
-            <span className="text-[#ff1b1b] text-xs font-black tracking-[0.25em] uppercase block mb-2">
-              PORTAL CUSTOMER
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-white mb-4">
-              Cek Tracking & Dokumen Invoice
-            </h2>
-            <p className="text-neutral-400 text-sm leading-relaxed mb-6">
-              Pantau progres produksi jersey Anda secara real-time. Cukup masukkan Nomor SPK dan Kode Akses unik 8 karakter yang telah diberikan oleh admin kami.
-            </p>
-
-            <div className="p-4 rounded-xl bg-[#141416] border border-[#2a2a2a] text-xs text-neutral-400 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-[#13a45a] shrink-0 mt-0.5" />
-              <div>
-                <strong className="text-white block font-semibold mb-1">Akses Aman & Terisolasi</strong>
-                <span>Setiap SPK memiliki kode akses mandiri. Data rahasia seperti HPP tidak pernah dipublikasikan.</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-7">
-            {!customerData ? (
-              /* Customer Login Box */
-              <div className="bg-[#121214] border border-[#2a2a2a] rounded-2xl p-6 sm:p-8 shadow-xl">
-                <h3 className="text-xl font-black uppercase text-white mb-2">Masuk ke Pesanan Anda</h3>
-                <p className="text-xs text-neutral-400 mb-6">Masukkan informasi SPK untuk melihat rincian.</p>
-
-                {customerError && (
-                  <div className="mb-6 p-4 rounded-xl bg-red-950/40 border border-red-600/50 text-red-200 text-xs">
-                    {customerError}
-                  </div>
-                )}
-
-                <form onSubmit={handleCustomerLogin} className="space-y-4">
-                  <div>
-                    <label className="block text-xs uppercase font-bold text-neutral-400 mb-1.5">
-                      Nomor SPK
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Contoh: SPK-20261120-26555"
-                      value={spkInput}
-                      onChange={(e) => setSpkInput(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#18181b] border border-[#333] rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-[#ff1b1b]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs uppercase font-bold text-neutral-400 mb-1.5">
-                      Kode Akses Customer (8 Karakter)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Contoh: F96BEFD3"
-                      value={codeInput}
-                      onChange={(e) => setCodeInput(e.target.value)}
-                      className="w-full px-4 py-3 bg-[#18181b] border border-[#333] rounded-xl text-sm text-white placeholder-neutral-500 font-mono tracking-widest focus:outline-none focus:border-[#ff1b1b]"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={customerLoading}
-                    className="w-full py-3.5 bg-[#ff1b1b] hover:bg-[#e01616] text-white font-bold text-sm uppercase tracking-wider rounded-xl transition duration-150 disabled:opacity-50"
-                  >
-                    {customerLoading ? 'Memeriksa Akses...' : 'Buka Pesanan Saya'}
-                  </button>
-                </form>
+          <div className="catalog-grid" id="catalogGrid">
+            {filteredProducts.length === 0 ? (
+              <div className="public-empty">
+                <strong>{products.length ? 'Produk tidak ditemukan' : 'Katalog segera hadir'}</strong>
+                <p>
+                  {products.length
+                    ? 'Coba kategori atau kata pencarian lain.'
+                    : 'Admin belum menerbitkan produk katalog.'}
+                </p>
               </div>
             ) : (
-              /* Customer Order Detail Portal */
-              <div className="bg-[#121214] border border-[#2a2a2a] rounded-2xl p-6 sm:p-8 shadow-xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-[#222] gap-4">
+              filteredProducts.map((p) => {
+                const coverUrl = p.cover?.url || p.gallery?.[0]?.url;
+                return (
+                  <article
+                    key={p.id}
+                    className="catalog-card"
+                    onClick={() => openProductModal(p)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="catalog-image">
+                      {coverUrl ? (
+                        <img src={coverUrl} alt={p.name} loading="lazy" />
+                      ) : (
+                        <div className="product-placeholder">
+                          <span>IA</span>
+                          <strong>{p.name}</strong>
+                        </div>
+                      )}
+                      {p.badge && <span className="product-badge">{p.badge}</span>}
+                    </div>
+                    <div className="catalog-card-body">
+                      <span>{p.category}</span>
+                      <h3>{p.name}</h3>
+                      <p>{p.short_description || 'Produk custom sesuai kebutuhan Anda.'}</p>
+                      <div className="catalog-card-foot">
+                        <strong>
+                          {settings.show_prices !== false
+                            ? p.price
+                              ? `Mulai ${formatRupiah(p.price)}`
+                              : 'Hubungi kami'
+                            : 'Harga konsultasi'}
+                        </strong>
+                        <button type="button" aria-label={`Lihat detail ${p.name}`}>
+                          Lihat detail →
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        {/* Customer Portal / Order Tracking Section */}
+        <section className="order-section" id="order">
+          <div className="order-intro">
+            <span>PORTAL CUSTOMER</span>
+            <h2>Cek tracking dan invoice.</h2>
+            <p>
+              Masukkan nomor SPK serta kode akses yang diberikan Admin. Data yang terlihat hanya milik
+              pesanan tersebut.
+            </p>
+            <div className="privacy-note">
+              <strong>Akses aman per pesanan</strong>
+              <small>Kode akses berbeda untuk setiap SPK dan bisa diperbarui oleh Admin.</small>
+            </div>
+          </div>
+          <div className="customer-access">
+            {!customerData ? (
+              <form id="customerLoginForm" className="customer-login-card" onSubmit={handleCustomerLogin}>
+                <div>
+                  <span>AKSES PESANAN</span>
+                  <h3>Masuk ke pesanan Anda</h3>
+                </div>
+                <label>
+                  Nomor SPK
+                  <input
+                    name="spk"
+                    autoComplete="username"
+                    placeholder="Contoh: SPK-20261015-90875"
+                    value={spkInput}
+                    onChange={(e) => setSpkInput(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Kode Akses
+                  <input
+                    name="code"
+                    autoComplete="current-password"
+                    placeholder="8 digit kode customer"
+                    value={codeInput}
+                    onChange={(e) => setCodeInput(e.target.value)}
+                    required
+                  />
+                </label>
+                <button
+                  className="public-btn primary wide"
+                  id="customerLoginButton"
+                  type="submit"
+                  disabled={customerLoading}
+                >
+                  {customerLoading ? 'Memeriksa…' : 'Buka Pesanan'}
+                </button>
+                {customerError && <p className="form-message" style={{ color: '#ff3b30' }}>{customerError}</p>}
+              </form>
+            ) : (
+              <section className="customer-portal" id="customerPortal">
+                <div className="portal-customer-head">
                   <div>
-                    <span className="text-xs uppercase font-bold text-[#ff1b1b] tracking-wider block">
-                      SPK TERVERIFIKASI
-                    </span>
-                    <h3 className="text-2xl font-black text-white">{customerData.spk}</h3>
-                    <p className="text-xs text-neutral-400 mt-1">
-                      Customer: <strong className="text-white">{customerData.customer}</strong> · {customerData.product} ({customerData.qty} pcs)
+                    <span>PESANAN CUSTOMER</span>
+                    <h3>{customerData.job.spk}</h3>
+                    <p>
+                      {customerData.job.customer} · {customerData.job.product} · {customerData.job.qty} pcs
                     </p>
                   </div>
-                  <button
-                    onClick={handleCustomerLogout}
-                    className="px-4 py-2 rounded-lg bg-[#222] hover:bg-[#333] text-xs uppercase tracking-wider font-semibold text-neutral-300"
-                  >
+                  <button className="public-btn light" type="button" onClick={handleCustomerLogout}>
                     Keluar
                   </button>
                 </div>
 
-                {/* Progress bar */}
-                <div className="my-6 p-5 rounded-xl bg-[#18181b] border border-[#282828]">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs uppercase font-bold text-neutral-400">Status Produksi</span>
-                    <span className="text-xs font-black px-2.5 py-1 rounded bg-[#13a45a]/20 text-[#13a45a] uppercase">
-                      {customerData.stage} ({customerData.progress}%)
+                <div className="customer-summary">
+                  <article>
+                    <span>Status Produksi</span>
+                    <strong>{customerData.job.production.stage}</strong>
+                    <small>
+                      {Math.round(
+                        ((customerData.stages.indexOf(customerData.job.production.stage) + 1) /
+                          customerData.stages.length) *
+                          100
+                      )}
+                      % selesai
+                    </small>
+                  </article>
+                  <article>
+                    <span>Total Invoice</span>
+                    <strong>
+                      {formatRupiah(customerData.invoices.reduce((s, inv) => s + inv.total, 0))}
+                    </strong>
+                    <small>{customerData.invoices.length} dokumen</small>
+                  </article>
+                  <article>
+                    <span>Sudah Dibayar</span>
+                    <strong>
+                      {formatRupiah(customerData.invoices.reduce((s, inv) => s + inv.paid, 0))}
+                    </strong>
+                    <small>
+                      Sisa {formatRupiah(customerData.invoices.reduce((s, inv) => s + inv.balance, 0))}
+                    </small>
+                  </article>
+                </div>
+
+                <section className="tracking-public">
+                  <div className="portal-section-title">
+                    <h4>Tracking Produksi</h4>
+                    <span>
+                      Estimasi selesai{' '}
+                      {customerData.job.deadline ? formatDate(customerData.job.deadline) : 'menunggu konfirmasi'}
                     </span>
                   </div>
-                  <div className="w-full h-3 bg-[#262626] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[#ff1b1b] to-[#13a45a] transition-all duration-500"
-                      style={{ width: `${customerData.progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* History Timeline */}
-                <div className="mb-6">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">
-                    Riwayat Tahapan Produksi
-                  </h4>
-                  <div className="space-y-3">
-                    {customerData.history && customerData.history.length > 0 ? (
-                      customerData.history.map((step, idx) => (
-                        <div key={idx} className="flex items-start gap-3 text-xs bg-[#161618] p-3 rounded-lg border border-[#262626]">
-                          <CheckCircle2 className="w-4 h-4 text-[#13a45a] shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <strong className="text-white block font-semibold">{step.stage} ({step.progress}%)</strong>
-                            {step.note && <span className="text-neutral-400 block mt-0.5">{step.note}</span>}
-                          </div>
-                          <span className="text-[10px] text-neutral-500 whitespace-nowrap">
-                            {formatDate(step.created_at)}
-                          </span>
+                  <div className="stage-track">
+                    {customerData.stages.map((stage) => {
+                      const isDone =
+                        customerData.stages.indexOf(stage) <=
+                        customerData.stages.indexOf(customerData.job.production.stage);
+                      return (
+                        <div key={stage} className={isDone ? 'done' : ''}>
+                          <i />
+                          <span>{stage}</span>
                         </div>
+                      );
+                    })}
+                  </div>
+                  <div className="public-timeline">
+                    {customerData.history.length ? (
+                      customerData.history.map((item, idx) => (
+                        <article key={idx}>
+                          <i />
+                          <div>
+                            <strong>{item.stage}</strong>
+                            <p>{item.note || 'Proses diperbarui.'}</p>
+                            <small>{formatDate(item.created_at)}</small>
+                          </div>
+                        </article>
                       ))
                     ) : (
-                      <p className="text-xs text-neutral-500">Belum ada catatan tahapan lanjutan.</p>
+                      <div className="public-empty">
+                        <strong>Produksi belum dimulai</strong>
+                        <p>Pembaruan proses akan tampil di sini.</p>
+                      </div>
                     )}
                   </div>
-                </div>
+                </section>
 
-                {/* Invoice & Payment Info */}
-                {customerData.invoice && (
-                  <div className="pt-6 border-t border-[#222]">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-[#18181b] border border-[#2a2a2a]">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold text-neutral-400 block">Dokumen Tagihan</span>
-                        <div className="text-sm font-bold text-white mt-0.5">
-                          {customerData.invoice.invoice_no} —{' '}
-                          <span className="text-[#13a45a]">{customerData.invoice.payment_status}</span>
+                <section className="invoice-public">
+                  <div className="portal-section-title">
+                    <h4>Invoice &amp; Pembayaran</h4>
+                    <span>Dokumen untuk {customerData.job.spk}</span>
+                  </div>
+                  {customerData.invoices.length ? (
+                    customerData.invoices.map((inv) => (
+                      <article key={inv.id} className="public-invoice">
+                        <div className="invoice-public-head">
+                          <div>
+                            <span>{inv.invoice_no}</span>
+                            <strong>{inv.payment_status}</strong>
+                          </div>
+                          <button
+                            className="public-btn light"
+                            type="button"
+                            onClick={() => downloadCustomerPdf(inv.id)}
+                          >
+                            Unduh PDF
+                          </button>
                         </div>
-                        <div className="text-xs text-neutral-400 mt-1">
-                          Total: <strong className="text-white">{formatRupiah(customerData.invoice.total)}</strong> · Dibayar: {formatRupiah(customerData.invoice.paid)}
+                        <div className="invoice-public-total">
+                          <div>
+                            <span>Total</span>
+                            <strong>{formatRupiah(inv.total)}</strong>
+                          </div>
+                          <div>
+                            <span>Dibayar</span>
+                            <strong>{formatRupiah(inv.paid)}</strong>
+                          </div>
+                          <div>
+                            <span>Sisa</span>
+                            <strong>{formatRupiah(inv.balance)}</strong>
+                          </div>
                         </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleDownloadInvoicePdf(customerData.invoice!.id)}
-                        className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#ff1b1b] hover:bg-[#e01616] text-white text-xs font-bold uppercase tracking-wider transition shadow-md shadow-[#ff1b1b]/20"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Unduh PDF Invoice</span>
-                      </button>
+                        <div className="invoice-public-items">
+                          {inv.items.map((it, itIdx) => (
+                            <div key={itIdx}>
+                              <span>
+                                {it.description} · {it.qty} pcs
+                              </span>
+                              <strong>{formatRupiah(it.qty * it.price)}</strong>
+                            </div>
+                          ))}
+                        </div>
+                        {inv.payments.length ? (
+                          <div className="payment-history">
+                            <h5>Riwayat Pembayaran</h5>
+                            {inv.payments.map((pm, pmIdx) => (
+                              <div key={pmIdx}>
+                                <span>
+                                  {formatDate(pm.date)} · {pm.method}
+                                </span>
+                                <strong>{formatRupiah(pm.amount)}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="unpaid-note">Belum ada pembayaran tercatat.</p>
+                        )}
+                      </article>
+                    ))
+                  ) : (
+                    <div className="public-empty">
+                      <strong>Invoice belum dibuat</strong>
+                      <p>Invoice akan tampil setelah dibuat oleh Admin.</p>
                     </div>
+                  )}
+                </section>
+              </section>
+            )}
+          </div>
+        </section>
+
+        {/* About Section */}
+        {settings.show_about !== false && (
+          <section className="about-section" id="tentang" aria-labelledby="aboutTitle">
+            <div className="about-motion-window" aria-hidden="true">
+              <div
+                className="about-motion-photo"
+                id="aboutMotionPhoto"
+                style={aboutBackgroundUrl ? { backgroundImage: `url("${aboutBackgroundUrl}")` } : undefined}
+              />
+              <div className="about-motion-shade" />
+            </div>
+            <div className="about-copy">
+              <span id="aboutKicker">{settings.about_kicker || 'TENTANG KAMI'}</span>
+              <h2 id="aboutTitle">{settings.about_title || 'DIBUAT UNTUK IDENTITAS ANDA.'}</h2>
+              <p id="aboutText">
+                {settings.about_text ||
+                  'IMPOSSIBLE APPAREL membantu mewujudkan jersey dan apparel custom dari tahap desain, pemilihan bahan, produksi, hingga quality control.'}
+              </p>
+              <div className="about-values">
+                <div>
+                  <strong>01</strong>
+                  <span>Desain terarah</span>
+                </div>
+                <div>
+                  <strong>02</strong>
+                  <span>Produksi terpantau</span>
+                </div>
+                <div>
+                  <strong>03</strong>
+                  <span>Hasil berkualitas</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Location Section */}
+        <section className="location-section" id="lokasi" aria-labelledby="locationTitle">
+          <div className="public-section-head">
+            <div>
+              <span>KUNJUNGI KAMI</span>
+              <h2 id="locationTitle">Lokasi Impossible Apparel</h2>
+            </div>
+            <p>Temukan lokasi kami dan buka petunjuk arah untuk berkunjung.</p>
+          </div>
+          <iframe
+            className="location-map"
+            title="Peta lokasi Impossible Apparel"
+            src="https://maps.google.com/maps?q=-6.6518483,108.2188568&amp;z=17&amp;output=embed"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+          <div className="location-actions">
+            <a
+              className="public-btn primary"
+              href="https://www.google.com/maps/dir/?api=1&amp;destination=-6.6518483%2C108.2188568"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Petunjuk Arah
+            </a>
+            <a
+              className="public-btn"
+              href="https://www.google.com/maps/search/?api=1&amp;query=-6.6518483%2C108.2188568"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Buka Google Maps
+            </a>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="public-footer">
+        <img
+          src={settings.logo?.url || '/assets/impossible-logo.png'}
+          alt="IMPOSSIBLE APPAREL"
+        />
+        <div>
+          <strong id="footerBrand">{settings.brand_name || 'IMPOSSIBLE APPAREL'}</strong>
+          <p id="footerAddress">{settings.address || 'Custom apparel production.'}</p>
+        </div>
+        {settings.instagram && (
+          <a
+            id="footerInstagram"
+            href={
+              settings.instagram.startsWith('http')
+                ? settings.instagram
+                : `https://instagram.com/${settings.instagram.replace(/^@/, '')}`
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Instagram
+          </a>
+        )}
+      </footer>
+
+      {/* Live Order Ticker */}
+      {settings.show_order_ticker !== false && activities.length > 0 && (
+        <section className="public-live-ticker" id="liveOrderTicker" aria-label="Aktivitas order terbaru">
+          <div className="ticker-label">
+            <i />
+            <span id="tickerLabel">{settings.ticker_label || 'LIVE ORDER'}</span>
+          </div>
+          <div className="ticker-window" id="tickerWindow">
+            <div className="ticker-track" id="tickerTrack">
+              <div className="ticker-sequence">
+                {activities.map((item, idx) => (
+                  <span key={idx} className="ticker-item">
+                    <i />
+                    <span>{item.message}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="ticker-sequence" aria-hidden="true">
+                {activities.map((item, idx) => (
+                  <span key={`dup-${idx}`} className="ticker-item">
+                    <i />
+                    <span>{item.message}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Product Detail Modal */}
+      {selectedProduct && (
+        <div className="product-modal" id="productModal" onClick={closeProductModal}>
+          <article className="product-dialog" id="productDialog" onClick={(e) => e.stopPropagation()}>
+            <button className="product-close" id="closeProduct" type="button" aria-label="Tutup" onClick={closeProductModal}>
+              ×
+            </button>
+            <div className="product-detail-media">
+              <div id="productMainImage">
+                {selectedProductImage ? (
+                  <img className="detail-main" src={selectedProductImage} alt={selectedProduct.name} />
+                ) : (
+                  <div className="product-placeholder detail-main">
+                    <span>IA</span>
+                    <strong>{selectedProduct.name}</strong>
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 7. Tentang Kami */}
-      <section id="tentang" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 border-b border-[#222]">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div>
-            <span className="text-[#ff1b1b] text-xs font-black tracking-[0.25em] uppercase block mb-2">
-              {settings.about_kicker || 'TENTANG KAMI'}
-            </span>
-            <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white mb-6">
-              {settings.about_title || 'DIBUAT UNTUK IDENTITAS ANDA.'}
-            </h2>
-            <p className="text-neutral-400 text-base leading-relaxed mb-8">
-              {settings.about_text ||
-                'IMPOSSIBLE APPAREL hadir memadukan kreativitas grafis dengan teknologi sublimasi kain tercanggih. Setiap helai pakaian dikerjakan oleh tim berpengalaman dengan standar kontrol kualitas ketat demi kenyamanan dan ketahanan maksimal.'}
-            </p>
-
-            <div className="grid grid-cols-3 gap-4 border-t border-[#222] pt-6">
-              <div>
-                <strong className="text-2xl font-black text-[#ff1b1b]">01</strong>
-                <p className="text-xs font-bold text-neutral-300 uppercase mt-1">Desain Terarah</p>
-              </div>
-              <div>
-                <strong className="text-2xl font-black text-[#d4af37]">02</strong>
-                <p className="text-xs font-bold text-neutral-300 uppercase mt-1">Produksi Terpantau</p>
-              </div>
-              <div>
-                <strong className="text-2xl font-black text-[#13a45a]">03</strong>
-                <p className="text-xs font-bold text-neutral-300 uppercase mt-1">Hasil Berkualitas</p>
-              </div>
+              {selectedProduct.gallery && selectedProduct.gallery.length > 0 && (
+                <div className="product-thumbs">
+                  {[selectedProduct.cover, ...selectedProduct.gallery].filter(Boolean).map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedProductImage(img!.url)}
+                      aria-label={`Gambar ${idx + 1}`}
+                    >
+                      <img src={img!.url} alt="" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-
-          <div className="rounded-2xl border border-[#2a2a2a] bg-[#121214] p-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-[#ff1b1b]/10 blur-3xl rounded-full pointer-events-none" />
-            <h3 className="text-xl font-black uppercase text-white mb-4">Mengapa Memilih Kami?</h3>
-            <ul className="space-y-4 text-sm text-neutral-300">
-              <li className="flex items-start gap-3">
-                <CheckCheck className="w-5 h-5 text-[#ff1b1b] shrink-0" />
-                <span>Teknologi sublimasi anti-luntur dengan ketajaman warna tinggi.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <CheckCheck className="w-5 h-5 text-[#ff1b1b] shrink-0" />
-                <span>Bahan dryfit lembut, adem, cepat kering (quick-dry), dan elastis.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <CheckCheck className="w-5 h-5 text-[#ff1b1b] shrink-0" />
-                <span>Transparansi alur SPK: Customer dapat melihat progres pengerjaan via web.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <CheckCheck className="w-5 h-5 text-[#ff1b1b] shrink-0" />
-                <span>Dokumen legal resmi: Invoice & Kwitansi PDF berstandar rapi.</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* 8. Lokasi Section */}
-      <section id="lokasi" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 border-b border-[#222]">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-[#ff1b1b] text-xs font-black tracking-[0.25em] uppercase block mb-2">
-            KUNJUNGI KAMI
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-white mb-3">
-            Lokasi Workshop Impossible Apparel
-          </h2>
-          <p className="text-neutral-400 text-sm">
-            Datang langsung ke workshop kami untuk melihat sampel bahan, fitting ukuran jersey, atau konsultasi desain bersama tim.
-          </p>
-        </div>
-
-        <div className="rounded-2xl overflow-hidden border border-[#2a2a2a] shadow-2xl mb-8 h-[400px]">
-          <iframe
-            title="Peta lokasi Impossible Apparel"
-            src="https://maps.google.com/maps?q=-6.6518483,108.2188568&z=17&output=embed"
-            className="w-full h-full border-0"
-            loading="lazy"
-            allowFullScreen
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <a
-            href="https://www.google.com/maps/dir/?api=1&destination=-6.6518483%2C108.2188568"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 rounded-xl bg-[#ff1b1b] hover:bg-[#e01616] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-[#ff1b1b]/20"
-          >
-            <MapPin className="w-4 h-4" />
-            <span>Petunjuk Arah</span>
-          </a>
-          <a
-            href="https://www.google.com/maps/search/?api=1&query=-6.6518483%2C108.2188568"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 rounded-xl bg-[#18181b] hover:bg-[#222] border border-[#333] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2"
-          >
-            <ExternalLink className="w-4 h-4" />
-            <span>Buka Google Maps</span>
-          </a>
-        </div>
-      </section>
-
-      {/* 9. Public Footer */}
-      <footer className="bg-[#060607] py-12 border-t border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <img
-              src="/assets/impossible-logo.png"
-              alt="IMPOSSIBLE APPAREL"
-              className="h-10 w-auto object-contain"
-            />
-            <div>
-              <strong className="block text-sm font-black tracking-wide text-white">
-                {settings.brand_name || 'IMPOSSIBLE APPAREL'}
-              </strong>
-              <small className="text-neutral-500 text-xs">
-                {settings.address || 'Custom Apparel & Jersey Production.'}
-              </small>
+            <div className="product-detail-copy">
+              <span>{selectedProduct.category}</span>
+              <h2>{selectedProduct.name}</h2>
+              <p className="lead">{selectedProduct.short_description}</p>
+              {settings.show_prices !== false && (
+                <div className="product-price">
+                  {selectedProduct.price ? formatRupiah(selectedProduct.price) : 'Konsultasikan harga'}
+                  <small>Harga awal per produk</small>
+                </div>
+              )}
+              <div className="product-facts">
+                <div>
+                  <span>Minimal order</span>
+                  <strong>{selectedProduct.min_order || 1} pcs</strong>
+                </div>
+                <div>
+                  <span>Estimasi produksi</span>
+                  <strong>
+                    {selectedProduct.production_days ? `${selectedProduct.production_days} hari` : 'Konfirmasi Admin'}
+                  </strong>
+                </div>
+              </div>
+              {selectedProduct.description && (
+                <section>
+                  <h3>Deskripsi</h3>
+                  <p>{selectedProduct.description}</p>
+                </section>
+              )}
+              {selectedProduct.materials && selectedProduct.materials.length > 0 && (
+                <section>
+                  <h3>Pilihan bahan</h3>
+                  <div className="chip-list">
+                    {selectedProduct.materials.map((m, idx) => (
+                      <span key={idx}>{m.name}</span>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {selectedProduct.sizes && selectedProduct.sizes.length > 0 && (
+                <section>
+                  <h3>Ukuran tersedia</h3>
+                  <div className="chip-list">
+                    {selectedProduct.sizes.map((s, idx) => (
+                      <span key={idx}>{s}</span>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {selectedProduct.specifications && (
+                <section>
+                  <h3>Spesifikasi</h3>
+                  <p>{selectedProduct.specifications}</p>
+                </section>
+              )}
+              <a
+                className="public-btn primary wide"
+                href={getWhatsappUrl(`Halo IMPOSSIBLE APPAREL, saya tertarik dengan ${selectedProduct.name}.`)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Konsultasi via WhatsApp
+              </a>
             </div>
-          </div>
-
-          <p className="text-neutral-600 text-xs">
-            © {new Date().getFullYear()} IMPOSSIBLE APPAREL. All rights reserved.
-          </p>
+          </article>
         </div>
-      </footer>
-    </div>
+      )}
+
+      {/* Public Toast */}
+      {toastMsg && (
+        <div className="public-toast" id="publicToast">
+          {toastMsg}
+        </div>
+      )}
+    </>
   );
 };

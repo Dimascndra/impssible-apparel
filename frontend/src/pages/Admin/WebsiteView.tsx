@@ -132,7 +132,7 @@ export const WebsiteView: React.FC = () => {
       setProdCategory(prod.category);
       setProdPrice(prod.price);
       setProdDesc(prod.description || '');
-      setProdPublished(prod.is_published);
+      setProdPublished(prod.is_published ?? (prod.status === 'PUBLISH'));
     } else {
       setEditingProduct(null);
       setProdName('');

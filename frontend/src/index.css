@@ -1,3 +1,6 @@
+@import './public-site.css';
+@import './location-v13.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

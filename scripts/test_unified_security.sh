@@ -242,6 +242,12 @@ CAT_RES=$(curl -s -X POST "${BASE_URL}/api/admin/catalog" \
   -F "description=Jersey futsal dan sepakbola premium anti gerah." \
   -F "status=PUBLISH")
 echo "$CAT_RES" | grep -qi "product" && pass "Produk katalog berhasil dibuat dan dipublikasikan" || fail "Buat katalog gagal: $CAT_RES"
+CREATED_CAT_ID=$(echo "$CAT_RES" | sed -n 's/.*"id":\([0-9]*\).*/\1/p')
+if [ -n "$CREATED_CAT_ID" ]; then
+  curl -s -X DELETE "${BASE_URL}/api/admin/catalog/${CREATED_CAT_ID}" \
+    -b "$COOKIE_JAR_ADMIN" \
+    -H "X-CSRF-Token: ${ADMIN_CSRF}" > /dev/null
+fi
 
 info "6. PENGUJIAN ROLE DESAIN & SENSOR DATA RAHASIA"
 # Login Desain

@@ -1,0 +1,10 @@
+.location-section { padding: clamp(48px, 7vw, 90px) clamp(18px, 6vw, 90px); scroll-margin-top: 140px; }
+.location-map { display: block; width: 100%; height: clamp(300px, 48vw, 480px); border: 1px solid #ddd; border-radius: 16px; background: #eee; }
+.location-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+@media (max-width: 1000px) {
+  .public-header { height: auto; min-height: 68px; padding-top: 8px; padding-bottom: 8px; grid-template-columns: 1fr auto; }
+  .public-header nav { display: flex; grid-column: 1 / -1; grid-row: 2; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 6px 0; }
+  .public-header nav a { font-size: 12px; white-space: nowrap; }
+  .header-contact { grid-column: 2; grid-row: 1; }
+  #home, #catalog, #order { scroll-margin-top: 140px; }
+}
