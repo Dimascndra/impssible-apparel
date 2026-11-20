@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080808">
+  <title>Admin Portal — IMPOSSIBLE APPAREL</title>
+  <link rel="stylesheet" href="/instruksi/assets/app.css?v=20260903-6">
+  <link rel="stylesheet" href="/instruksi/assets/marketing.css?v=20260928-1">
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div class="sidebar-brand"><img src="/instruksi/assets/impossible-logo.png?v=20260902-5" alt="IMPOSSIBLE APPAREL"><span>ADMIN PORTAL</span></div>
+      <nav class="admin-nav" aria-label="Menu utama">
+        <button type="button" class="nav-item active" data-view="dashboard"><span>⌂</span> Dashboard</button>
+        <button type="button" class="nav-item" data-view="instructions"><span>✦</span> Instruksi</button>
+        <a class="nav-item nav-external" id="designDashboardLink" href="/desain" target="_blank" rel="noopener"><span>D</span> Dashboard Desain <small>↗</small></a>
+        <button type="button" class="nav-item" data-view="tracking"><span>↻</span> Tracking Produksi</button>
+        <button type="button" class="nav-item" data-view="orderTypes"><span>H</span> Jenis Order & HPP</button>
+        <button type="button" class="nav-item" data-view="marketing"><span>M</span> Marketing Sosmed & Iklan</button>
+        <button type="button" class="nav-item" data-view="website"><span>W</span> Website Publik</button>
+        <button type="button" class="nav-item" data-view="cashflow"><span>↕</span> Cashflow</button>
+        <button type="button" class="nav-item" data-view="billing"><span>Rp</span> Invoice & Kwitansi</button>
+      </nav>
+      <div class="sidebar-foot"><span class="online-dot"></span><div><strong>Server aktif</strong><small id="modeText">Internal · jaringan lokal</small></div></div>
+    </aside>
+
+    <header class="admin-mobile-top">
+      <img src="/instruksi/assets/impossible-logo.png?v=20260902-5" alt="IMPOSSIBLE APPAREL">
+      <button class="btn btn-small hide" id="adminLogoutMobile">Keluar</button>
+    </header>
+
+    <main class="admin-main">
+      <header class="portal-topbar">
+        <div><small class="eyebrow">IMPOSSIBLE APPAREL</small><strong id="pageTitle">Dashboard</strong></div>
+        <div class="top-actions"><span class="muted" id="lastSync">Sinkronisasi…</span><button class="btn btn-small" id="refreshBtn">Muat ulang</button><button class="btn btn-small hide" id="adminLogout">Keluar</button></div>
+      </header>
+
+      <section class="portal-view" id="dashboardView" data-page="dashboard">
+        <div class="portal-hero"><div><span class="hero-kicker">CONTROL CENTER</span><h1>Selamat bekerja.</h1><p id="todayLabel">Ringkasan operasional hari ini.</p></div><button class="btn btn-primary" id="quickInstruction">+ Instruksi Baru</button></div>
+        <div class="metric-grid">
+          <article class="metric-card red"><span>SPK Aktif</span><strong id="statActive">0</strong><small>Belum selesai</small></article>
+          <article class="metric-card"><span>Menunggu Desain</span><strong id="statWaiting">0</strong><small>Perlu ditangani</small></article>
+          <article class="metric-card"><span>Dalam Produksi</span><strong id="statProduction">0</strong><small>Sudah masuk tracking</small></article>
+          <article class="metric-card dark"><span>Tagihan Belum Lunas</span><strong id="statOutstanding">Rp0</strong><small>Piutang berjalan</small></article>
+        </div>
+        <div class="overview-grid">
+          <section class="panel"><div class="panel-head"><h2>Alur Produksi</h2><button class="text-button" data-view="tracking">Lihat tracking →</button></div><div class="production-summary" id="productionSummary"></div></section>
+          <section class="panel"><div class="panel-head"><h2>Aktivitas SPK Terbaru</h2><button class="text-button" data-view="instructions">Lihat semua →</button></div><div class="recent-list" id="recentJobs"></div></section>
+        </div>
+        <section class="quick-panel"><div><span class="hero-kicker">AKSI CEPAT</span><h2>Buat dokumen pembayaran</h2><p>Buat invoice, input pembayaran, lalu unduh PDF Invoice atau Kwitansi.</p></div><button class="btn btn-dark" id="quickInvoice">+ Buat Invoice</button></section>
+      </section>
+
+      <section class="portal-view hide" id="instructionsView" data-page="instructions">
+        <div class="section-heading"><div><span class="hero-kicker">DESIGN REQUEST</span><h1>Instruksi Desain</h1><p>Buat brief, kirim lampiran, dan pantau pekerjaan tim desain.</p></div><button class="btn btn-primary" id="newBtn">+ Instruksi Baru</button></div>
+        <div class="link-strip"><div class="grow"><label>Tautan Website Publik</label><div class="public-link" id="publicLink">Mengambil tautan…</div></div><button class="btn btn-small" id="copyLink">Salin</button></div>
+        <div class="grid-main">
+          <section class="panel"><div class="panel-head"><h2>Antrean SPK</h2><span class="badge" id="jobCount">0</span></div><div class="job-list" id="jobList"></div></section>
+          <section class="panel" id="detailPanel"><div class="detail-empty"><div><strong>Pilih SPK</strong><p>Detail instruksi dan komunikasi akan tampil di sini.</p></div></div></section>
+        </div>
+      </section>
+
+      <section class="portal-view hide" id="trackingView" data-page="tracking">
+        <div class="section-heading"><div><span class="hero-kicker">PRODUCTION FLOW</span><h1>Tracking Produksi</h1><p>Perbarui tahap produksi dan simpan riwayat setiap SPK.</p></div><div class="search-box"><input id="trackingSearch" placeholder="Cari SPK atau customer…"></div></div>
+        <div class="tracking-board" id="trackingGrid"></div>
+      </section>
+
+      <section class="portal-view hide" id="orderTypesView" data-page="orderTypes">
+        <div class="section-heading"><div><span class="hero-kicker">MASTER HPP</span><h1>Jenis Order</h1><p>Kelola bahan baku, harga jual, HPP, dan keuntungan setiap produk.</p></div><div class="heading-actions"><button class="btn" id="newRawMaterialBtn">+ Bahan Baku</button><button class="btn btn-primary" id="newOrderTypeBtn">+ Jenis Order</button></div></div>
+        <div class="hpp-metrics">
+          <div><span>Jumlah Jenis Order</span><strong id="orderTypeCount">0</strong></div>
+          <div><span>Master Bahan Baku</span><strong id="rawMaterialCount">0</strong></div>
+          <div><span>Rata-rata HPP</span><strong id="averageHpp">Rp0</strong></div>
+          <div><span>Rata-rata Laba / Unit</span><strong id="averageProfit">Rp0</strong></div>
+        </div>
+        <section class="panel raw-material-panel">
+          <div class="panel-head"><div><h2>Kumpulan Bahan Baku</h2><span class="muted">Harga master otomatis dipakai saat menyusun jenis order</span></div><div class="search-box"><input id="rawMaterialSearch" placeholder="Cari bahan baku…"></div></div>
+          <div class="raw-material-grid" id="rawMaterialGrid"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Master Jenis Order</h2><span class="muted">HPP dihitung dari kebutuhan × harga satuan bahan</span></div><div class="search-box"><input id="orderTypeSearch" placeholder="Cari jenis order atau bahan…"></div></div>
+          <div class="order-type-grid" id="orderTypeGrid"></div>
+        </section>
+      </section>
+
+      <section class="portal-view hide marketing-view" id="marketingView" data-page="marketing">
+        <div class="section-heading marketing-heading">
+          <div><span class="hero-kicker">MARKETING COMMAND CENTER</span><h1>Sosmed & Iklan</h1><p>Kelola ide, produksi konten, approval, kalender, iklan, dan performa dari satu dashboard.</p></div>
+          <div class="heading-actions"><button class="btn" id="marketingRefresh" type="button">Muat Ulang</button><button class="btn btn-primary" id="marketingNewContent" type="button">+ Konten Baru</button></div>
+        </div>
+
+        <nav class="marketing-tabs" aria-label="Menu Marketing">
+          <button type="button" class="active" data-marketing-tab="overview">Overview</button>
+          <button type="button" data-marketing-tab="content">Content Studio</button>
+          <button type="button" data-marketing-tab="library">Media & Kalender</button>
+          <button type="button" data-marketing-tab="ads">Rencana Iklan</button>
+          <button type="button" data-marketing-tab="analytics">Analitik</button>
+          <button type="button" data-marketing-tab="connections">Koneksi & AI</button>
+        </nav>
+
+        <section class="marketing-tab-panel" data-marketing-panel="overview">
+          <div class="marketing-kpis" id="marketingKpis"></div>
+          <div class="marketing-overview-grid">
+            <section class="panel"><div class="panel-head"><div><h2>Alur Konten</h2><span class="muted">Draft wajib melalui Review dan Approve</span></div></div><div class="marketing-flow" id="marketingFlow"></div></section>
+            <section class="panel"><div class="panel-head"><div><h2>Jadwal Terdekat</h2><span class="muted">Konten yang belum terbit</span></div></div><div class="marketing-upcoming" id="marketingUpcoming"></div></section>
+          </div>
+          <section class="panel marketing-guard-panel"><div class="panel-head"><div><h2>AI Video Budget Guard</h2><span class="muted">Membatasi jumlah generate dan estimasi biaya Veo</span></div><button class="text-button" type="button" data-go-marketing="connections">Atur batas →</button></div><div class="marketing-ai-usage" id="marketingAiUsage"></div></section>
+        </section>
+
+        <section class="marketing-tab-panel hide" data-marketing-panel="content">
+          <div class="marketing-content-grid">
+            <form class="panel marketing-editor" id="marketingContentForm">
+              <div class="panel-head"><div><h2 id="marketingEditorTitle">Konten Baru</h2><span class="muted">Strategi lokal gratis atau Gemini jika sudah tersambung</span></div><button class="btn btn-small" id="marketingResetContent" type="button">Reset</button></div>
+              <div class="panel-body">
+                <input id="marketingPostId" type="hidden">
+                <div class="form-grid">
+                  <div class="field"><label>Produk</label><select id="marketingProduct"><option value="">Pilih produk…</option></select></div>
+                  <div class="field"><label>Tipe Konten</label><select id="marketingContentType"><option>PRODUCT PROOF</option><option>EDUKASI</option><option>PROSES PRODUKSI</option><option>TESTIMONI</option><option>PROMO</option><option>BEHIND THE SCENE</option></select></div>
+                  <div class="field"><label>Tujuan</label><select id="marketingObjective"><option>ORDER WHATSAPP</option><option>AWARENESS</option><option>ENGAGEMENT</option><option>TRAFFIC WEBSITE</option><option>REPEAT ORDER</option></select></div>
+                  <div class="field"><label>Audience</label><input id="marketingAudience" placeholder="Contoh: tim futsal SMA Bandung"></div>
+                  <div class="field full"><label>Penawaran / Brief Faktual</label><textarea id="marketingOffer" placeholder="Hanya tulis harga, promo, kapasitas, atau fakta yang benar-benar berlaku."></textarea></div>
+                  <div class="field full marketing-generate-row"><label class="marketing-switch"><input id="marketingUseAi" type="checkbox"> Gunakan Gemini</label><button class="btn btn-dark" id="marketingGenerate" type="button">✨ Buat Strategi & Caption</button><span class="muted" id="marketingEngineLabel">Mode lokal gratis</span></div>
+                  <div class="field full"><label>Judul Internal *</label><input id="marketingTitle" required placeholder="Nama konten untuk kalender"></div>
+                  <div class="field full"><label>Hook *</label><textarea id="marketingHook" required></textarea></div>
+                  <div class="field full"><label>Isi Utama *</label><textarea id="marketingBody" required></textarea></div>
+                  <div class="field full"><label>CTA</label><input id="marketingCta"></div>
+                  <div class="field full"><label>Alasan Strategi</label><div class="marketing-strategy" id="marketingStrategy"><span class="muted">Buat strategi untuk melihat rekomendasi.</span></div></div>
+                  <div class="field full"><label>Caption Instagram</label><textarea id="marketingCaptionInstagram"></textarea></div>
+                  <div class="field full"><label>Caption Facebook</label><textarea id="marketingCaptionFacebook"></textarea></div>
+                  <div class="field full"><label>Caption TikTok</label><textarea id="marketingCaptionTiktok"></textarea></div>
+                  <div class="field full"><label>Caption X (maks. 280)</label><textarea id="marketingCaptionX" maxlength="280"></textarea></div>
+                  <div class="field full"><label>Hashtag</label><input id="marketingHashtags" placeholder="jerseycustom, impossibleapparel"></div>
+                  <div class="field full"><label>Platform</label><div class="marketing-checks"><label><input type="checkbox" name="marketing_platform" value="instagram" checked> Instagram</label><label><input type="checkbox" name="marketing_platform" value="facebook" checked> Facebook</label><label><input type="checkbox" name="marketing_platform" value="tiktok"> TikTok</label><label><input type="checkbox" name="marketing_platform" value="x"> X</label></div></div>
+                  <div class="field"><label>Jadwal Tayang</label><input id="marketingSchedule" type="datetime-local"></div>
+                  <div class="field"><label>Readiness Score</label><div class="marketing-score"><strong id="marketingScore">0</strong><span>/100</span></div></div>
+                  <div class="field full"><label>Pilih Media</label><div class="marketing-media-picker" id="marketingMediaPicker"><span class="muted">Upload media pada tab Media & Kalender.</span></div></div>
+                  <div class="field full marketing-editor-actions"><button class="btn" id="marketingStoryboard" type="button">Buat Storyboard 9:16</button><button class="btn btn-primary" id="marketingSaveContent" type="submit">Simpan Draft</button></div>
+                </div>
+              </div>
+            </form>
+            <aside class="panel marketing-storyboard-card">
+              <div class="panel-head"><div><h2>Storyboard & Veo</h2><span class="muted">Rencana video vertikal 9:16</span></div></div>
+              <div class="panel-body">
+                <div id="marketingStoryboardOutput" class="marketing-storyboard-output"><span class="muted">Storyboard akan tampil di sini.</span></div>
+                <div class="field"><label>Prompt Veo</label><textarea id="marketingVeoPrompt" placeholder="Buat storyboard terlebih dahulu atau isi prompt manual."></textarea></div>
+                <div class="form-grid compact">
+                  <div class="field"><label>Model</label><select id="marketingVideoModel"><option value="veo-3.1-lite-generate-preview">Veo 3.1 Lite</option><option value="veo-3.1-fast-generate-preview">Veo 3.1 Fast</option><option value="veo-3.1-generate-preview">Veo 3.1 Quality</option></select></div>
+                  <div class="field"><label>Durasi</label><select id="marketingVideoDuration"><option value="4">4 detik</option><option value="6">6 detik</option><option value="8" selected>8 detik</option></select></div>
+                  <div class="field"><label>Resolusi</label><select id="marketingVideoResolution"><option>720p</option><option>1080p</option><option>4k</option></select></div>
+                  <div class="field"><label>Foto Referensi</label><select id="marketingVideoSource"><option value="">Text to video</option></select></div>
+                </div>
+                <button class="btn btn-primary btn-wide" id="marketingGenerateVideo" type="button">🎬 Generate Video dengan Veo</button>
+                <small class="field-help">Memerlukan Gemini API berbayar. Budget Guard diperiksa sebelum permintaan dikirim.</small>
+                <div class="marketing-video-jobs" id="marketingVideoJobs"></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="marketing-tab-panel hide" data-marketing-panel="library">
+          <section class="panel marketing-media-panel">
+            <div class="panel-head"><div><h2>Media Manager</h2><span class="muted">Foto/video bahan konten; maksimal 8 file per upload dan 50 MB per file</span></div></div>
+            <form class="marketing-media-upload" id="marketingMediaForm"><input name="media" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime" multiple required><button class="btn btn-primary" id="marketingUploadMedia" type="submit">Upload Media</button></form>
+            <div class="marketing-media-grid" id="marketingMediaGrid"></div>
+          </section>
+          <section class="panel marketing-calendar-panel"><div class="panel-head"><div><h2>Kalender & Approval Konten</h2><span class="muted">DRAFT → REVIEW → APPROVED → PUBLISHED</span></div><select id="marketingPostFilter"><option value="">Semua status</option><option>DRAFT</option><option>REVIEW</option><option>APPROVED</option><option>SCHEDULED</option><option>PUBLISHED</option></select></div><div class="marketing-post-list" id="marketingPostList"></div></section>
+        </section>
+
+        <section class="marketing-tab-panel hide" data-marketing-panel="ads">
+          <div class="marketing-two-column">
+            <form class="panel" id="marketingAdsForm"><div class="panel-head"><div><h2>Rencana Iklan Baru</h2><span class="muted">Menyusun budget tidak menjalankan iklan otomatis</span></div></div><div class="panel-body form-grid">
+              <div class="field"><label>Platform</label><select id="marketingAdPlatform"><option>META</option><option>TIKTOK</option><option>GOOGLE ADS</option></select></div>
+              <div class="field"><label>Nama Campaign *</label><input id="marketingAdName" required></div>
+              <div class="field"><label>Tujuan</label><select id="marketingAdObjective"><option>WHATSAPP</option><option>TRAFFIC</option><option>AWARENESS</option><option>CONVERSION</option></select></div>
+              <div class="field"><label>Budget / Hari</label><input id="marketingAdBudget" type="number" min="0" value="50000"></div>
+              <div class="field"><label>Durasi (hari)</label><input id="marketingAdDays" type="number" min="1" max="365" value="7"></div>
+              <div class="field"><label>Estimasi Maksimal</label><strong class="marketing-budget-total" id="marketingAdTotal">Rp0</strong></div>
+              <div class="field full"><label>Target Audience</label><textarea id="marketingAdAudience"></textarea></div>
+              <div class="field full"><label>Catatan Creative</label><textarea id="marketingAdCreative"></textarea></div>
+              <div class="field full"><button class="btn btn-primary btn-wide" type="submit">Simpan Draft Iklan</button></div>
+            </div></form>
+            <section class="panel"><div class="panel-head"><div><h2>Daftar Rencana Iklan</h2><span class="muted">Approve hanya menyetujui budget internal</span></div></div><div class="marketing-ads-list" id="marketingAdsList"></div></section>
+          </div>
+        </section>
+
+        <section class="marketing-tab-panel hide" data-marketing-panel="analytics">
+          <div class="marketing-kpis" id="marketingAnalyticsKpis"></div>
+          <div class="marketing-two-column">
+            <form class="panel" id="marketingMetricForm"><div class="panel-head"><div><h2>Input Performa</h2><span class="muted">Salin angka dari insight platform</span></div></div><div class="panel-body form-grid compact">
+              <div class="field"><label>Platform</label><select id="marketingMetricPlatform"><option value="instagram">Instagram</option><option value="facebook">Facebook</option><option value="tiktok">TikTok</option><option value="x">X</option><option value="google_ads">Google Ads</option></select></div>
+              <div class="field"><label>Tanggal</label><input id="marketingMetricDate" type="date" required></div>
+              <div class="field"><label>Konten</label><select id="marketingMetricPost"><option value="">Tanpa konten</option></select></div>
+              <div class="field"><label>Views</label><input id="marketingMetricViews" type="number" min="0" value="0"></div>
+              <div class="field"><label>Likes</label><input id="marketingMetricLikes" type="number" min="0" value="0"></div>
+              <div class="field"><label>Komentar</label><input id="marketingMetricComments" type="number" min="0" value="0"></div>
+              <div class="field"><label>Share</label><input id="marketingMetricShares" type="number" min="0" value="0"></div>
+              <div class="field"><label>Save</label><input id="marketingMetricSaves" type="number" min="0" value="0"></div>
+              <div class="field"><label>Klik</label><input id="marketingMetricClicks" type="number" min="0" value="0"></div>
+              <div class="field"><label>Klik WhatsApp</label><input id="marketingMetricWhatsapp" type="number" min="0" value="0"></div>
+              <div class="field"><label>Order</label><input id="marketingMetricOrders" type="number" min="0" value="0"></div>
+              <div class="field"><label>Omzet</label><input id="marketingMetricRevenue" type="number" min="0" value="0"></div>
+              <div class="field full"><label>Catatan</label><input id="marketingMetricNote"></div>
+              <div class="field full"><button class="btn btn-primary btn-wide" type="submit">Simpan Performa</button></div>
+            </div></form>
+            <section class="panel"><div class="panel-head"><div><h2>Performa per Platform</h2><span class="muted">Akumulasi data yang diinput</span></div></div><div class="marketing-platform-performance" id="marketingPlatformPerformance"></div></section>
+          </div>
+          <section class="panel"><div class="panel-head"><div><h2>Riwayat Performa & Publish</h2><span class="muted">Data dapat dihapus bila salah input</span></div></div><div class="marketing-analytics-log" id="marketingAnalyticsLog"></div></section>
+        </section>
+
+        <section class="marketing-tab-panel hide" data-marketing-panel="connections">
+          <div class="marketing-connection-notice"><strong>Credential disimpan terenkripsi di komputer server.</strong><span>Meta, TikTok, X, dan Google Ads tetap memerlukan akun developer serta persetujuan resmi platform sebelum auto-publish dapat diaktifkan.</span></div>
+          <div class="marketing-connections" id="marketingConnections"></div>
+          <form class="panel marketing-settings-form" id="marketingSettingsForm"><div class="panel-head"><div><h2>Pengaturan AI & Budget Guard</h2><span class="muted">Batas ini diperiksa sebelum Veo dijalankan</span></div></div><div class="panel-body form-grid">
+            <div class="field"><label>Model Strategi Gemini</label><input id="marketingStrategyModel"></div>
+            <div class="field"><label>Model Veo Default</label><select id="marketingDefaultVideoModel"><option value="veo-3.1-lite-generate-preview">Veo 3.1 Lite</option><option value="veo-3.1-fast-generate-preview">Veo 3.1 Fast</option><option value="veo-3.1-generate-preview">Veo 3.1 Quality</option></select></div>
+            <div class="field"><label>Maks. Generate / Hari</label><input id="marketingDailyLimit" type="number" min="1" max="100"></div>
+            <div class="field"><label>Budget AI / Bulan</label><input id="marketingMonthlyBudget" type="number" min="0"></div>
+            <div class="field"><label>Kurs USD → IDR</label><input id="marketingUsdIdr" type="number" min="1000"></div>
+            <div class="field"><label>Brand Voice</label><input id="marketingBrandVoice"></div>
+            <div class="field full"><label>Audience Default</label><input id="marketingDefaultAudience"></div>
+            <div class="field full"><button class="btn btn-primary" type="submit">Simpan Pengaturan Marketing</button></div>
+          </div></form>
+        </section>
+      </section>
+
+      <section class="portal-view hide" id="cashflowView" data-page="cashflow">
+        <div class="section-heading"><div><span class="hero-kicker">FINANCIAL CONTROL</span><h1>Cashflow</h1><p>Pantau uang masuk, uang keluar, cadangan HPP, dan keuntungan per SPK.</p></div><button class="btn btn-primary" id="newExpenseBtn">+ Catat Pengeluaran</button></div>
+        <div class="cashflow-metrics">
+          <article><span>Uang Masuk</span><strong id="cashflowIn">Rp0</strong><small>Otomatis dari pembayaran invoice</small></article>
+          <article><span>Uang Keluar</span><strong id="cashflowOut">Rp0</strong><small>Pengeluaran yang dicatat</small></article>
+          <article class="dark"><span>Saldo Kas</span><strong id="cashflowBalance">Rp0</strong><small>Masuk dikurangi keluar</small></article>
+          <article class="reserve"><span>Cadangan HPP</span><strong id="cashflowReserve">Rp0</strong><small>Budget bahan baku belum terpakai</small></article>
+          <article class="profit"><span>Laba Aman</span><strong id="cashflowProfit">Rp0</strong><small>Saldo setelah cadangan HPP</small></article>
+          <article><span>Proyeksi Laba</span><strong id="cashflowProjectedProfit">Rp0</strong><small>Nilai jual/invoice dikurangi total HPP</small></article>
+        </div>
+        <section class="panel cashflow-spk-panel"><div class="panel-head"><div><h2>Keuntungan & Budget per SPK</h2><span class="muted">Pembayaran masuk otomatis dialokasikan untuk kebutuhan HPP</span></div><div class="search-box"><input id="cashflowSearch" placeholder="Cari SPK, customer, produk…"></div></div><div class="cashflow-spk-list" id="cashflowSpkList"></div></section>
+        <section class="panel"><div class="panel-head"><div><h2>Riwayat Arus Kas</h2><span class="muted">Pemasukan otomatis dari invoice; pengeluaran dicatat manual</span></div></div><div class="cashflow-transactions" id="cashflowTransactions"></div></section>
+      </section>
+
+      <section class="portal-view hide" id="websiteView" data-page="website">
+        <div class="section-heading"><div><span class="hero-kicker">PUBLIC WEBSITE</span><h1>Website Publik</h1><p>Edit tampilan, katalog, dan informasi kontak yang dilihat customer.</p></div><div class="heading-actions"><button class="btn" id="openPublicWebsite">Buka Website</button><button class="btn btn-primary" id="newCatalogProduct">+ Produk Katalog</button></div></div>
+        <div class="website-admin-grid">
+          <form class="panel website-settings-card" id="websiteSettingsForm">
+            <div class="panel-head"><div><h2>Tampilan Website</h2><span class="muted">Perubahan langsung berlaku pada halaman publik</span></div></div>
+            <div class="panel-body form-grid">
+              <div class="field"><label>Nama Brand</label><input id="websiteBrand" name="brand_name" required></div>
+              <div class="field"><label>Judul Katalog</label><input id="websiteCatalogTitle" name="catalog_title" required></div>
+              <div class="field full"><label>Judul Utama</label><input id="websiteHeroTitle" name="hero_title" required></div>
+              <div class="field full"><label>Deskripsi Utama</label><textarea id="websiteHeroText" name="hero_text" required></textarea></div>
+              <div class="field full website-form-divider"><strong>Menu Tentang Kami</strong><small>Isi bagian profil brand yang tampil setelah header website.</small></div>
+              <div class="field"><label>Tampilkan Tentang Kami</label><select id="websiteShowAbout" name="show_about"><option value="true">Tampilkan</option><option value="false">Sembunyikan</option></select></div>
+              <div class="field"><label>Label Bagian</label><input id="websiteAboutKicker" name="about_kicker" maxlength="200" placeholder="TENTANG KAMI"></div>
+              <div class="field full"><label>Judul Tentang Kami</label><input id="websiteAboutTitle" name="about_title" maxlength="200"></div>
+              <div class="field full"><label>Deskripsi Tentang Kami</label><textarea id="websiteAboutText" name="about_text" maxlength="1600"></textarea></div>
+              <div class="field"><label>Nomor WhatsApp</label><input id="websiteWhatsapp" name="whatsapp" placeholder="Contoh: 628123456789"></div>
+              <div class="field"><label>Instagram</label><input id="websiteInstagram" name="instagram" placeholder="@impossibleapparel"></div>
+              <div class="field full"><label>Alamat / Informasi Footer</label><textarea id="websiteAddress" name="address"></textarea></div>
+              <div class="field"><label>Warna Utama</label><input id="websitePrimaryColor" name="primary_color" type="color" value="#e32127"></div>
+              <div class="field"><label>Warna Background</label><input id="websiteBackgroundColor" name="background_color" type="color" value="#090909"></div>
+              <div class="field"><label>Tampilkan Harga</label><select id="websiteShowPrices" name="show_prices"><option value="true">Ya, tampilkan</option><option value="false">Sembunyikan</option></select></div>
+              <div class="field"><label>Kecepatan Ganti Foto</label><select id="websiteHeroInterval" name="hero_interval_seconds"><option value="4">4 detik</option><option value="6">6 detik</option><option value="8">8 detik</option><option value="10">10 detik</option><option value="15">15 detik</option></select></div>
+              <div class="field"><label>Running Text Order</label><select id="websiteShowTicker" name="show_order_ticker"><option value="true">Tampilkan</option><option value="false">Sembunyikan</option></select></div>
+              <div class="field full"><label>Judul Running Text</label><input id="websiteTickerLabel" name="ticker_label" maxlength="40" placeholder="LIVE ORDER"></div>
+              <div class="field"><label>Logo Website</label><input name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/gif"><small id="websiteLogoStatus" class="field-help">Menggunakan logo utama.</small></div>
+              <div class="field full"><button class="btn btn-primary btn-wide" id="saveWebsiteSettings" type="submit">Simpan Tampilan Website</button></div>
+            </div>
+          </form>
+          <section class="panel website-summary-card"><div class="panel-head"><h2>Ringkasan Publikasi</h2></div><div class="website-summary" id="websiteSummary"></div></section>
+        </div>
+        <div class="website-background-admin-grid">
+          <section class="panel website-media-manager">
+            <div class="panel-head"><div><h2>Background Menu Header</h2><span class="muted">Latar bar paling atas yang berisi logo dan menu navigasi</span></div></div>
+            <div class="website-about-media"><div class="website-media-preview website-header-strip-preview" id="websiteNavBackgroundPreview">Menggunakan warna gelap bawaan</div><small id="websiteNavBackgroundStatus" class="field-help">Foto akan diberi lapisan gelap agar logo dan menu tetap terbaca.</small></div>
+            <form class="website-media-upload" id="websiteNavBackgroundForm">
+              <div class="field"><label>Pilih Background Menu</label><input id="websiteNavBackground" name="nav_background" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required></div>
+              <button class="btn btn-primary" id="uploadWebsiteNavBackground" type="submit">Upload Background Menu</button>
+              <button class="btn btn-danger" id="deleteWebsiteNavBackground" type="button" hidden>Hapus Background Menu</button>
+            </form>
+          </section>
+          <section class="panel website-media-manager">
+            <div class="panel-head"><div><h2>Background Hero Website</h2><span class="muted">Background header besar di bawah menu seperti pengaturan sebelumnya</span></div></div>
+            <div class="website-about-media"><div class="website-media-preview" id="websiteHeroBackgroundPreview">Belum ada background hero</div><small id="websiteHeroBackgroundStatus" class="field-help">Tetap tampil sebagai dasar saat slideshow belum tersedia.</small></div>
+            <form class="website-media-upload" id="websiteHeroBackgroundForm">
+              <div class="field"><label>Pilih Background Hero</label><input id="websiteHeroBackground" name="hero_background" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required></div>
+              <button class="btn btn-primary" id="uploadWebsiteHeroBackground" type="submit">Upload Background Hero</button>
+              <button class="btn btn-danger" id="deleteWebsiteHeroBackground" type="button" hidden>Hapus Background Hero</button>
+            </form>
+          </section>
+        </div>
+        <div class="website-media-admin-grid">
+          <section class="panel website-media-manager">
+            <div class="panel-head"><div><h2>Slideshow Header Besar</h2><span class="muted">Kelola foto dan video yang tampil silih berganti di area hero</span></div></div>
+            <form class="website-media-upload" id="websiteHeaderMediaForm">
+              <div class="field"><label>Foto / Video Header</label><input id="websiteHeroMedia" name="header_media" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" multiple><small class="field-help">Maksimal 8 file sekali upload, 12 media tersimpan, dan 50 MB per file.</small></div>
+              <button class="btn btn-primary" id="uploadWebsiteHeaderMedia" type="submit">Upload Header</button>
+            </form>
+            <div class="hero-media-existing" id="websiteHeroMediaExisting"></div>
+          </section>
+          <section class="panel website-media-manager">
+            <div class="panel-head"><div><h2>Foto Tentang Kami</h2><span class="muted">Foto bergerak ke kanan dan kiri pada bagian Tentang Kami</span></div></div>
+            <div class="website-about-media"><div class="website-media-preview" id="websiteAboutBackgroundPreview">Belum ada foto</div><small id="websiteAboutBackgroundStatus" class="field-help">Jika kosong, sistem memakai foto header sebagai cadangan.</small></div>
+            <form class="website-media-upload" id="websiteAboutBackgroundForm">
+              <div class="field"><label>Pilih Foto</label><input id="websiteAboutBackground" name="about_background" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required></div>
+              <button class="btn btn-primary" id="uploadWebsiteAboutBackground" type="submit">Upload Foto</button>
+              <button class="btn btn-danger" id="deleteWebsiteAboutBackground" type="button" hidden>Hapus Foto</button>
+            </form>
+          </section>
+        </div>
+        <section class="panel website-live-preview-panel">
+          <div class="panel-head"><div><h2>Preview Live Website</h2><span class="muted">Menampilkan tampilan terbaru langsung dari server tanpa membuka tab lain</span></div><div class="website-preview-actions"><button class="btn btn-small active" type="button" data-preview-device="desktop">Desktop</button><button class="btn btn-small" type="button" data-preview-device="mobile">HP</button><button class="btn btn-small" type="button" id="refreshWebsitePreview">Muat Ulang Preview</button></div></div>
+          <div class="website-preview-stage desktop" id="websitePreviewStage"><iframe id="websiteLivePreview" src="/website-preview?embedded=1" title="Preview live Website Publik" loading="lazy"></iframe></div>
+          <small class="website-preview-note">Preview tidak menerima klik agar pengeditan tetap aman. Gunakan tombol “Buka Website” untuk mencoba semua fungsi.</small>
+        </section>
+        <section class="panel website-products-panel"><div class="panel-head"><div><h2>Produk Katalog</h2><span class="muted">Hanya produk berstatus Publish yang terlihat di website</span></div><div class="search-box"><input id="catalogAdminSearch" placeholder="Cari produk atau kategori…"></div></div><div class="catalog-admin-grid" id="catalogAdminGrid"></div></section>
+      </section>
+
+      <section class="portal-view hide" id="billingView" data-page="billing">
+        <div class="section-heading"><div><span class="hero-kicker">FINANCE DOCUMENT</span><h1>Invoice & Kwitansi</h1><p>Buat tagihan, input pembayaran, dan cetak kwitansi dua rangkap.</p></div><button class="btn btn-primary" id="newInvoiceBtn">+ Buat Invoice</button></div>
+        <div class="billing-metrics">
+          <div><span>Total Invoice</span><strong id="billingCount">0</strong></div>
+          <div><span>Sudah Dibayar</span><strong id="billingPaid">Rp0</strong></div>
+          <div><span>Sisa Tagihan</span><strong id="billingOutstanding">Rp0</strong></div>
+        </div>
+        <section class="panel"><div class="panel-head"><h2>Daftar Invoice</h2><span class="muted">Input pembayaran dan unduh PDF kwitansi A4 dua rangkap</span></div><div class="invoice-list" id="invoiceList"></div></section>
+      </section>
+    </main>
+
+    <nav class="mobile-bottom-nav" aria-label="Menu mobile">
+      <button type="button" class="active" data-view="dashboard"><span>⌂</span>Home</button>
+      <button type="button" data-view="instructions"><span>✦</span>Instruksi</button>
+      <a id="designDashboardLinkMobile" href="/desain" target="_blank" rel="noopener"><span>D</span>Desain</a>
+      <button type="button" data-view="tracking"><span>↻</span>Tracking</button>
+      <button type="button" data-view="orderTypes"><span>H</span>HPP</button>
+      <button type="button" data-view="marketing"><span>M</span>Marketing</button>
+      <button type="button" data-view="website"><span>W</span>Website</button>
+      <button type="button" data-view="cashflow"><span>↕</span>Cashflow</button>
+      <button type="button" data-view="billing"><span>Rp</span>Invoice</button>
+    </nav>
+  </div>
+
+  <div class="modal" id="newModal" hidden>
+    <form class="modal-card" id="jobForm">
+      <div class="panel-head"><h2>Instruksi Desain Baru</h2><button class="modal-close" type="button" id="closeModal">×</button></div>
+      <div class="panel-body form-grid">
+        <div class="field"><label>Nomor SPK</label><input name="spk" placeholder="Otomatis bila kosong"></div>
+        <div class="field"><label>Customer *</label><input name="customer" required></div>
+        <div class="field"><label>Jenis Instruksi *</label><select name="instruction_type" required><option>INSTRUKSI BIASA</option><option>ORDERAN BARU</option></select></div>
+        <div class="field"><label>Produk / Jenis Order *</label><select name="order_type_id" id="jobOrderType" required><option value="">Pilih jenis order…</option></select></div>
+        <div class="field"><label>Jumlah</label><input name="qty" type="number" min="1" value="1"></div>
+        <div class="field"><label>Deadline</label><input name="deadline" type="date"></div>
+        <div class="field"><label>Prioritas</label><select name="priority"><option>NORMAL</option><option>URGENT</option></select></div>
+        <div class="field full"><label>Brief / Catatan</label><textarea name="note" required></textarea></div>
+        <div class="field full"><label>Lampiran Instruksi</label><input name="files" type="file" accept="image/*,.pdf,.cdr,.ai,.eps,.svg,.psd,.zip,.rar,.doc,.docx,.xls,.xlsx,.txt" multiple><small class="field-help">Bisa beberapa file. Maksimal 50 MB per file.</small></div>
+        <div class="field full"><button class="btn btn-primary" type="submit" id="submitJob">Kirim ke Dashboard Desain</button></div>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="trackingModal" hidden>
+    <section class="modal-card">
+      <div class="panel-head"><div><h2 id="trackingModalTitle">Update Produksi</h2><span class="muted" id="trackingModalSub"></span></div><button class="modal-close" type="button" id="closeTracking">×</button></div>
+      <div class="panel-body tracking-modal-grid">
+        <form id="trackingForm" class="tracking-update-form">
+          <div class="field"><label>Tahap Produksi</label><select id="trackingStage" required></select></div>
+          <div class="field"><label>Catatan Proses</label><textarea id="trackingNote" placeholder="Contoh: Selesai print 12 pcs, lanjut press…"></textarea></div>
+          <button class="btn btn-primary btn-wide" type="submit">Simpan Update</button>
+        </form>
+        <div><h3 class="section-title">Riwayat Produksi</h3><div class="timeline" id="trackingHistory"></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal" id="invoiceModal" hidden>
+    <form class="modal-card invoice-modal" id="invoiceForm">
+      <div class="panel-head"><h2>Buat Invoice Baru</h2><button class="modal-close" type="button" id="closeInvoice">×</button></div>
+      <div class="panel-body">
+        <div class="form-grid">
+          <div class="field"><label>Ambil dari SPK</label><select id="invoiceJob" name="job_id"><option value="">Tanpa SPK</option></select></div>
+          <div class="field"><label>Nomor Invoice</label><input name="invoice_no" placeholder="Otomatis bila kosong"></div>
+          <div class="field"><label>Customer *</label><input id="invoiceCustomer" name="customer" required></div>
+          <div class="field"><label>Tanggal Invoice</label><input id="invoiceDate" name="invoice_date" type="date" required></div>
+          <div class="field"><label>Jatuh Tempo</label><input name="due_date" type="date"></div>
+          <div class="field"><label>Alamat / Kontak</label><input name="address"></div>
+        </div>
+        <div class="invoice-items-head"><h3 class="section-title">Rincian Item</h3><button class="btn btn-small" type="button" id="addInvoiceItem">+ Tambah Item</button></div>
+        <div class="invoice-items" id="invoiceItems"></div>
+        <div class="invoice-footer-form">
+          <div class="field"><label>Catatan</label><textarea name="notes" placeholder="Terima kasih telah mempercayai IMPOSSIBLE APPAREL."></textarea></div>
+          <div class="invoice-totals-form">
+            <label>Diskon</label><input name="discount" id="invoiceDiscount" type="number" min="0" value="0">
+            <label>Ongkir/Biaya Lain</label><input name="shipping" id="invoiceShipping" type="number" min="0" value="0">
+            <label>Pembayaran Awal</label><input name="paid" id="invoicePaid" type="number" min="0" value="0" placeholder="Jumlah yang diterima">
+            <label>Tanggal Bayar</label><input name="payment_date" id="invoicePaymentDate" type="date">
+            <label>Metode Bayar</label><select name="payment_method" id="invoicePaymentMethod"><option>Tunai</option><option>Transfer Bank</option><option>QRIS</option><option>Lainnya</option></select>
+            <div class="grand-total"><span>Total</span><strong id="invoiceGrandTotal">Rp0</strong></div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-wide" type="submit" id="saveInvoice">Simpan Invoice</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="orderTypeModal" hidden>
+    <form class="modal-card hpp-modal" id="orderTypeForm">
+      <div class="panel-head"><div><h2 id="orderTypeModalTitle">Jenis Order Baru</h2><span class="muted">Susun bahan baku untuk menghitung HPP per produk</span></div><button class="modal-close" type="button" id="closeOrderType">×</button></div>
+      <div class="panel-body">
+        <input type="hidden" id="orderTypeId">
+        <div class="form-grid">
+          <div class="field"><label>Nama Jenis Order *</label><input id="orderTypeName" name="name" placeholder="Contoh: Jersey Printing Premium" required></div>
+          <div class="field"><label>Satuan Hasil</label><input id="orderTypeUnit" name="output_unit" value="pcs" placeholder="pcs / set / unit"></div>
+          <div class="field"><label>Harga Jual / Satuan *</label><input id="orderTypeSellingPrice" name="selling_price" type="number" min="0" placeholder="Contoh: 125000" required></div>
+          <div class="field full"><label>Catatan</label><textarea id="orderTypeNote" name="note" placeholder="Spesifikasi atau keterangan jenis order"></textarea></div>
+        </div>
+        <div class="hpp-material-head"><div><h3 class="section-title">Rincian Bahan Baku</h3><span class="muted">Masukkan kebutuhan untuk menghasilkan 1 satuan produk</span></div><button class="btn btn-small" type="button" id="addHppMaterial">+ Tambah Bahan</button></div>
+        <div class="hpp-empty-warning hide" id="orderTypeMaterialWarning"><div><strong>Bahan baku belum tersedia</strong><span>Formulir Jenis Order tetap terbuka di halaman yang benar. Buat bahan baku terlebih dahulu agar HPP dapat dihitung.</span></div><button class="btn btn-small" type="button" id="orderTypeAddRawMaterial">+ Buat Bahan Baku</button></div>
+        <div class="hpp-material-list" id="hppMaterialList"></div>
+        <div class="hpp-form-summary"><div><span>HPP per <strong id="hppOutputLabel">pcs</strong></span><strong id="hppGrandTotal">Rp0</strong></div><div><span>Laba per unit</span><strong id="hppProfit">Rp0</strong></div><div><span>Margin</span><strong id="hppMargin">0%</strong></div></div>
+        <button class="btn btn-primary btn-wide" type="submit" id="saveOrderType">Simpan Jenis Order</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="rawMaterialModal" hidden>
+    <form class="modal-card payment-modal" id="rawMaterialForm">
+      <div class="panel-head"><div><h2 id="rawMaterialModalTitle">Bahan Baku Baru</h2><span class="muted">Simpan bahan dan harga satuannya untuk dipakai berulang</span></div><button class="modal-close" type="button" id="closeRawMaterial">×</button></div>
+      <div class="panel-body">
+        <input type="hidden" id="rawMaterialId">
+        <div class="form-grid">
+          <div class="field"><label>Nama Bahan *</label><input id="rawMaterialName" name="name" placeholder="Contoh: Kain Dryfit" required></div>
+          <div class="field"><label>Satuan *</label><input id="rawMaterialUnit" name="unit" placeholder="meter / kg / pcs" required></div>
+          <div class="field"><label>Harga Satuan *</label><input id="rawMaterialPrice" name="unit_price" type="number" min="0" required></div>
+          <div class="field"><label>Catatan</label><input id="rawMaterialNote" name="note" placeholder="Supplier atau spesifikasi"></div>
+        </div>
+        <button class="btn btn-primary btn-wide" type="submit" id="saveRawMaterial">Simpan Bahan Baku</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="catalogProductModal" hidden>
+    <form class="modal-card catalog-product-modal" id="catalogProductForm">
+      <div class="panel-head"><div><h2 id="catalogProductModalTitle">Produk Katalog Baru</h2><span class="muted">Informasi, media, harga, spesifikasi, FAQ, dan SEO</span></div><button class="modal-close" type="button" id="closeCatalogProduct">×</button></div>
+      <div class="panel-body">
+        <input type="hidden" id="catalogProductId">
+        <div class="catalog-form-section"><h3>Informasi Dasar</h3><div class="form-grid">
+          <div class="field"><label>Nama Produk *</label><input id="catalogProductName" name="name" required></div>
+          <div class="field"><label>URL Slug</label><input id="catalogProductSlug" name="slug" placeholder="Otomatis dari nama"></div>
+          <div class="field"><label>Kategori Jenis Order *</label><select id="catalogProductOrderType" name="order_type_id" required></select></div>
+          <div class="field"><label>Status</label><select id="catalogProductStatus" name="status"><option>DRAFT</option><option>PUBLISH</option></select></div>
+          <div class="field"><label>Badge</label><select id="catalogProductBadge" name="badge"><option value="">Tanpa badge</option><option>NEW</option><option>BEST SELLER</option><option>PREMIUM</option><option>READY TO CUSTOM</option></select></div>
+          <div class="field"><label>Koleksi</label><input id="catalogProductCollection" name="collection" placeholder="Contoh: Match Series"></div>
+          <div class="field"><label>Urutan Tampil</label><input id="catalogProductOrder" name="display_order" type="number" min="0" value="0"></div>
+          <div class="field check-field"><label><input id="catalogProductFeatured" name="featured" type="checkbox" value="true"> Tampilkan sebagai produk unggulan</label></div>
+          <div class="field full"><label>Deskripsi Singkat</label><input id="catalogProductShort" name="short_description" maxlength="400"></div>
+          <div class="field full"><label>Deskripsi Lengkap</label><textarea id="catalogProductDescription" name="description"></textarea></div>
+        </div></div>
+        <div class="catalog-form-section"><h3>Harga & Produksi</h3><div class="form-grid">
+          <div class="field"><label>Harga Mulai</label><input id="catalogProductPrice" name="price" type="number" min="0"><small class="field-help">Otomatis mengambil harga jual Jenis Order bila kosong.</small></div>
+          <div class="field"><label>Minimum Order</label><input id="catalogProductMinimum" name="min_order" type="number" min="1" value="1"></div>
+          <div class="field"><label>Estimasi Produksi (hari)</label><input id="catalogProductDays" name="production_days" type="number" min="0" value="0"></div>
+          <div class="field"><label>Ukuran</label><input id="catalogProductSizes" name="sizes" placeholder="S, M, L, XL, XXL"></div>
+          <div class="field full"><label>Pilihan Bahan</label><div class="material-picker" id="catalogMaterialPicker"></div></div>
+        </div></div>
+        <div class="catalog-form-section"><h3>Media & Galeri</h3><div class="form-grid">
+          <div class="field"><label>Foto Utama</label><input name="cover" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div>
+          <div class="field"><label>Tambah Galeri</label><input name="gallery" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple></div>
+          <div class="field full"><div class="catalog-media-existing" id="catalogMediaExisting"></div></div>
+        </div></div>
+        <div class="catalog-form-section"><h3>Spesifikasi, FAQ & SEO</h3><div class="form-grid">
+          <div class="field full"><label>Spesifikasi</label><textarea id="catalogProductSpecs" name="specifications" placeholder="Tulis spesifikasi produk per baris"></textarea></div>
+          <div class="field full"><label>FAQ</label><textarea id="catalogProductFaq" name="faq" placeholder="Satu pertanyaan per baris dengan format: Pertanyaan | Jawaban"></textarea></div>
+          <div class="field"><label>Judul SEO</label><input id="catalogProductSeoTitle" name="seo_title" maxlength="160"></div>
+          <div class="field"><label>Deskripsi SEO</label><input id="catalogProductSeoDescription" name="seo_description" maxlength="320"></div>
+        </div></div>
+        <button class="btn btn-primary btn-wide" id="saveCatalogProduct" type="submit">Simpan Produk Katalog</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="expenseModal" hidden>
+    <form class="modal-card payment-modal" id="expenseForm">
+      <div class="panel-head"><div><h2>Catat Pengeluaran</h2><span class="muted">Hubungkan ke SPK agar keuntungan per order akurat</span></div><button class="modal-close" type="button" id="closeExpense">×</button></div>
+      <div class="panel-body">
+        <div class="form-grid">
+          <div class="field"><label>Untuk SPK</label><select id="expenseJob" name="job_id"><option value="">Umum / tanpa SPK</option></select></div>
+          <div class="field"><label>Tanggal *</label><input id="expenseDate" name="date" type="date" required></div>
+          <div class="field"><label>Kategori *</label><select name="category" required><option>BAHAN BAKU</option><option>OPERASIONAL</option><option>GAJI/UPAH</option><option>LAINNYA</option></select></div>
+          <div class="field"><label>Jumlah *</label><input name="amount" type="number" min="1" required></div>
+          <div class="field full"><label>Keterangan *</label><textarea name="description" placeholder="Contoh: Beli kain dryfit 12 meter" required></textarea></div>
+        </div>
+        <button class="btn btn-primary btn-wide" type="submit" id="saveExpense">Simpan Pengeluaran</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="paymentModal" hidden>
+    <form class="modal-card payment-modal" id="paymentForm">
+      <div class="panel-head"><div><h2>Input Pembayaran</h2><span class="muted" id="paymentInvoiceLabel"></span></div><button class="modal-close" type="button" id="closePayment">×</button></div>
+      <div class="panel-body">
+        <input type="hidden" id="paymentInvoiceId">
+        <div class="payment-summary">
+          <div><span>Total Invoice</span><strong id="paymentTotal">Rp0</strong></div>
+          <div><span>Sudah Dibayar</span><strong id="paymentPaid">Rp0</strong></div>
+          <div><span>Sisa Tagihan</span><strong id="paymentBalance">Rp0</strong></div>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>Jumlah Pembayaran *</label><input id="paymentAmount" name="amount" type="number" min="1" required></div>
+          <div class="field"><label>Tanggal Pembayaran *</label><input id="paymentDate" name="date" type="date" required></div>
+          <div class="field"><label>Metode Pembayaran</label><select id="paymentMethod" name="method"><option>Tunai</option><option>Transfer Bank</option><option>QRIS</option><option>Lainnya</option></select></div>
+          <div class="field"><label>Catatan</label><input id="paymentNote" name="note" placeholder="Contoh: DP tahap kedua"></div>
+        </div>
+        <button class="btn btn-primary btn-wide" type="submit" id="savePayment">Simpan Pembayaran</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="print-document" id="printDocument"></div>
+
+  <script src="/instruksi/assets/common.js?v=20260903-6"></script>
+  <script src="/instruksi/assets/instruction.js?v=20260903-6"></script>
+  <script src="/instruksi/assets/marketing.js?v=20260928-1"></script>
+</body>
+</html>

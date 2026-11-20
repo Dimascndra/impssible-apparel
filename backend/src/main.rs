@@ -76,6 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ui,
         upload_dir: config.upload_dir.clone(),
         data_dir: config.data_dir.clone(),
+        frontend_dir: config.frontend_dir.clone(),
         session_secret: config.session_secret.clone(),
         rate_limiter,
         started_at: Utc::now(),
@@ -350,12 +351,20 @@ fn build_unified_router(state: AppState) -> Router {
         .route("/api/admin/marketing/connections/:platform", put(save_marketing_connection).delete(delete_marketing_connection))
         .layer(middleware::from_fn_with_state(state.clone(), admin_guard));
 
+    // 6. Static files from Vite build (frontend/dist/assets)
+    let dist_dir = state.frontend_dir.join("dist");
+    let assets_dir = dist_dir.join("assets");
+    let static_routes = Router::new()
+        .nest_service("/assets", tower_http::services::ServeDir::new(assets_dir.clone()))
+        .nest_service("/instruksi/assets", tower_http::services::ServeDir::new(assets_dir));
+
     Router::new()
         .merge(public_ui_routes)
         .merge(protected_ui_routes)
         .merge(public_api_routes)
         .merge(design_api_routes)
         .merge(admin_api_routes)
+        .merge(static_routes)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

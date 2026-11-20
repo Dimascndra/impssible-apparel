@@ -4,3 +4,6 @@
 .env
 backend/.env
 data/session-secret.txt
+frontend/node_modules/
+frontend/dist/
+uploads/*.cdr

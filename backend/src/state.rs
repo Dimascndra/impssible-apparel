@@ -11,6 +11,7 @@ pub struct AppState {
     pub ui: Arc<UiTemplates>,
     pub upload_dir: PathBuf,
     pub data_dir: PathBuf,
+    pub frontend_dir: PathBuf,
     pub session_secret: Vec<u8>,
     pub rate_limiter: Arc<RateLimiter>,
     pub started_at: DateTime<Utc>,
