@@ -75,6 +75,8 @@ pub async fn auth_login(
     }
 
     let token = make_token(&user.username, &user.role, &state.session_secret);
+    let session = read_token(&token, &state.session_secret);
+    let csrf = session.map(|s| s.csrf).unwrap_or_default();
     let cookie_val = format!(
         "impossible_session={}; HttpOnly; SameSite=Lax; Path=/; Max-Age=43200",
         token
@@ -82,6 +84,9 @@ pub async fn auth_login(
 
     let body = json!({
         "ok": true,
+        "username": user.username,
+        "role": user.role,
+        "csrf": csrf,
         "user": {
             "username": user.username,
             "role": user.role
@@ -109,11 +114,13 @@ pub async fn auth_me(
 
     Ok(Json(json!({
         "ok": true,
+        "username": session.username,
+        "role": session.role,
+        "csrf": session.csrf,
         "user": {
             "username": session.username,
             "role": session.role
-        },
-        "csrf": session.csrf
+        }
     })))
 }
 

@@ -31,9 +31,13 @@ export class ApiError extends Error {
   }
 }
 
+export interface RequestOptions extends RequestInit {
+  skipAuthRedirect?: boolean;
+}
+
 export async function apiClient<T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestOptions = {}
 ): Promise<T> {
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string> || {}),
@@ -69,14 +73,6 @@ export async function apiClient<T = any>(
     );
   }
 
-  // Handle 401 Unauthorized
-  if (response.status === 401) {
-    if (window.location.pathname !== '/login') {
-      window.location.href = '/login';
-    }
-    throw new ApiError('Sesi login telah berakhir. Silakan login kembali.', 401, 'UNAUTHORIZED');
-  }
-
   // Parse JSON response if present
   let data: any = {};
   const contentType = response.headers.get('content-type') || '';
@@ -86,6 +82,25 @@ export async function apiClient<T = any>(
     } catch {
       data = {};
     }
+  }
+
+  // Handle 401 Unauthorized
+  if (response.status === 401) {
+    const isPublicEndpoint = endpoint.startsWith('/api/public/');
+    const isPublicPage =
+      window.location.pathname === '/' ||
+      window.location.pathname.startsWith('/katalog') ||
+      window.location.pathname.startsWith('/cek-pesanan');
+
+    if (!options.skipAuthRedirect && !isPublicEndpoint && !isPublicPage && window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    throw new ApiError(
+      data.error || 'Sesi login telah berakhir. Silakan login kembali.',
+      401,
+      'UNAUTHORIZED',
+      data
+    );
   }
 
   if (!response.ok) {

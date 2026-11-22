@@ -50,13 +50,22 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   useEffect(() => {
     async function checkAuth() {
       try {
-        const me = await apiClient<UserSession>('/api/auth/me');
-        if (me.role !== 'admin') {
+        const me = await apiClient<any>('/api/auth/me');
+        const role = me.role || me.user?.role;
+        const username = me.username || me.user?.username || 'admin';
+        const csrf = me.csrf || me.user?.csrf;
+
+        if (role !== 'admin') {
           navigate('/login');
           return;
         }
-        setSession(me);
-        if (me.csrf) setCsrfToken(me.csrf);
+        setSession({
+          ok: true,
+          username,
+          role,
+          csrf,
+        });
+        if (csrf) setCsrfToken(csrf);
       } catch {
         navigate('/login');
       }

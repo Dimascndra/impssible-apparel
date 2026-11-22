@@ -18,20 +18,19 @@ export const Login: React.FC = () => {
     setIsRateLimited(false);
 
     try {
-      const data = await apiClient<{
-        ok: boolean;
-        role: 'admin' | 'design';
-        csrf: string;
-      }>('/api/auth/login', {
+      const data = await apiClient<any>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       });
 
-      if (data.csrf) {
-        setCsrfToken(data.csrf);
+      const role = data.role || data.user?.role;
+      const csrf = data.csrf || data.user?.csrf;
+
+      if (csrf) {
+        setCsrfToken(csrf);
       }
 
-      if (data.role === 'admin') {
+      if (role === 'admin') {
         navigate('/instruksi');
       } else {
         navigate('/desain');

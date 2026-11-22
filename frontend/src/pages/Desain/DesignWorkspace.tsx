@@ -54,13 +54,22 @@ export const DesignWorkspace: React.FC = () => {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const me = await apiClient<UserSession>('/api/auth/me');
-        if (me.role !== 'design' && me.role !== 'admin') {
+        const me = await apiClient<any>('/api/auth/me');
+        const role = me.role || me.user?.role;
+        const username = me.username || me.user?.username || 'desain';
+        const csrf = me.csrf || me.user?.csrf;
+
+        if (role !== 'design' && role !== 'admin') {
           navigate('/login');
           return;
         }
-        setSession(me);
-        if (me.csrf) setCsrfToken(me.csrf);
+        setSession({
+          ok: true,
+          username,
+          role,
+          csrf,
+        });
+        if (csrf) setCsrfToken(csrf);
       } catch {
         navigate('/login');
       }
